@@ -178,11 +178,7 @@ CRITICAL LANGUAGE RULE:
 - Short, human replies: 2-3 sentences"""
 }
 
-# ============================================================
-# AGORA TOKEN GENERATION (Real RTC Token v1)
-# ============================================================
 def gen_agora_token(channel, uid=0, role=1, expire_seconds=3600):
-    """Generate a proper Agora RTC Token v1"""
     if not AGORA_APP_ID or AGORA_APP_ID == "demo":
         return {
             "token": f"SIM_{channel}_{int(time.time())}",
@@ -192,28 +188,21 @@ def gen_agora_token(channel, uid=0, role=1, expire_seconds=3600):
             "simulated": True
         }
     try:
-        # Agora Token Builder v1
         VERSION = "007"
         privilege_expired_ts = int(time.time()) + expire_seconds
-        
-        # Privileges
         PRIVILEGE_JOIN_CHANNEL = 1
         PRIVILEGE_PUBLISH_AUDIO_STREAM = 2
         PRIVILEGE_PUBLISH_VIDEO_STREAM = 3
         PRIVILEGE_PUBLISH_DATA_STREAM = 4
-        
         privileges = {
             PRIVILEGE_JOIN_CHANNEL: privilege_expired_ts,
             PRIVILEGE_PUBLISH_AUDIO_STREAM: privilege_expired_ts,
             PRIVILEGE_PUBLISH_VIDEO_STREAM: privilege_expired_ts,
             PRIVILEGE_PUBLISH_DATA_STREAM: privilege_expired_ts,
         }
-        
         nonce = uuid.uuid4().hex
         ts = int(time.time())
-        
         import struct
-        
         def pack_uint16(x):
             return struct.pack('<H', int(x))
         def pack_uint32(x):
@@ -226,17 +215,13 @@ def gen_agora_token(channel, uid=0, role=1, expire_seconds=3600):
             for k, v in sorted(d.items()):
                 result += pack_uint16(k) + pack_uint32(v)
             return result
-        
         msg = pack_uint32(ts) + pack_uint32(0) + pack_string(nonce) + pack_map_uint32(privileges)
-        
         signing_key = hmac.new(AGORA_CERT.encode('utf-8'), AGORA_APP_ID.encode('utf-8'), hashlib.sha256).digest()
         signing_key = hmac.new(signing_key, str(ts).encode('utf-8'), hashlib.sha256).digest()
         signing_key = hmac.new(signing_key, nonce.encode('utf-8'), hashlib.sha256).digest()
         signing_key = hmac.new(signing_key, str(uid).encode('utf-8'), hashlib.sha256).digest()
         signing_key = hmac.new(signing_key, channel.encode('utf-8'), hashlib.sha256).digest()
-        
         signature = hmac.new(signing_key, msg, hashlib.sha256).digest()
-        
         content = (
             pack_string(AGORA_APP_ID) +
             pack_string(channel) +
@@ -248,9 +233,7 @@ def gen_agora_token(channel, uid=0, role=1, expire_seconds=3600):
         for k, v in sorted(privileges.items()):
             content += pack_uint16(k) + pack_uint32(v)
         content += pack_uint16(len(signature)) + signature
-        
         token = VERSION + base64.b64encode(content).decode('utf-8')
-        
         return {
             "token": token,
             "app_id": AGORA_APP_ID,
@@ -270,7 +253,7 @@ def gen_agora_token(channel, uid=0, role=1, expire_seconds=3600):
         }
 
 # ============================================================
-# FULL UI HTML WITH JARVIS MIC ANIMATION + FIXED FALLBACK TTS
+# UI HTML – FULLY FIXED TTS & JARVIS LOGIC
 # ============================================================
 UI_HTML = r"""
 <!DOCTYPE html>
@@ -283,25 +266,14 @@ UI_HTML = r"""
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <style>
-:root {
-  --bg: #0F0E23; --bg2: #13122a; --purple: #6C3BF5; --cyan: #00D4FF;
-  --purple-light: #a78bfa; --white: #ffffff;
-  --glass: rgba(255,255,255,0.04); --glass-border: rgba(255,255,255,0.08);
-  --glass-border-purple: rgba(108,59,245,0.35);
-}
+:root { --bg: #0F0E23; --bg2: #13122a; --purple: #6C3BF5; --cyan: #00D4FF; --purple-light: #a78bfa; --white: #ffffff; --glass: rgba(255,255,255,0.04); --glass-border: rgba(255,255,255,0.08); --glass-border-purple: rgba(108,59,245,0.35); }
 * { margin:0; padding:0; box-sizing:border-box; }
 html { scroll-behavior:smooth; }
 body { background:var(--bg); color:var(--white); font-family:'Inter',sans-serif; overflow-x:hidden; }
 #bg-canvas { position:fixed; top:0; left:0; width:100%; height:100%; z-index:0; pointer-events:none; }
 .page { position:relative; z-index:1; }
 
-nav {
-  position:fixed; top:0; left:0; right:0; z-index:1000;
-  display:flex; align-items:center; justify-content:space-between;
-  padding:0 60px; height:68px;
-  background:rgba(15,14,35,0.75); backdrop-filter:blur(20px);
-  border-bottom:1px solid rgba(108,59,245,0.15);
-}
+nav { position:fixed; top:0; left:0; right:0; z-index:1000; display:flex; align-items:center; justify-content:space-between; padding:0 60px; height:68px; background:rgba(15,14,35,0.75); backdrop-filter:blur(20px); border-bottom:1px solid rgba(108,59,245,0.15); }
 .nav-logo { font-family:'Space Grotesk',sans-serif; font-size:22px; font-weight:700; background:linear-gradient(135deg,#6C3BF5,#00D4FF); -webkit-background-clip:text; -webkit-text-fill-color:transparent; letter-spacing:-0.5px; }
 .nav-links { display:flex; align-items:center; gap:8px; }
 .nav-links a { color:rgba(255,255,255,0.6); text-decoration:none; font-size:14px; padding:8px 16px; border-radius:8px; transition:all 0.2s; cursor:pointer; }
@@ -452,105 +424,25 @@ h1.hero-title { font-family:'Space Grotesk',sans-serif; font-size:clamp(50px,6vw
 .send-btn { width:46px; height:46px; border-radius:50%; background:linear-gradient(135deg,#6C3BF5,#00D4FF); border:none; color:#fff; font-size:18px; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all 0.2s; box-shadow:0 0 20px rgba(108,59,245,0.4); }
 .send-btn:hover { transform:scale(1.1); box-shadow:0 0 35px rgba(108,59,245,0.6); }
 
-/* ============================================================
-   JARVIS MIC BUTTON + OVERLAY
-   ============================================================ */
-.mic-btn {
-  width:46px; height:46px; border-radius:50%;
-  background:rgba(255,255,255,0.05);
-  border:1px solid rgba(255,255,255,0.1);
-  color:#fff; font-size:20px; cursor:pointer;
-  display:flex; align-items:center; justify-content:center;
-  transition:all 0.2s; position:relative; z-index:2;
-  flex-shrink:0;
-}
+.mic-btn { width:46px; height:46px; border-radius:50%; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); color:#fff; font-size:20px; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all 0.2s; position:relative; z-index:2; flex-shrink:0; }
 .mic-btn:hover { background:rgba(108,59,245,0.2); border-color:rgba(108,59,245,0.4); }
-.mic-btn.jarvis-active {
-  background:rgba(108,59,245,0.3);
-  border-color:rgba(108,59,245,0.8);
-  box-shadow:0 0 0 0 rgba(108,59,245,0.6);
-  animation:jarvisMicPulse 0.8s ease-in-out infinite;
-}
-@keyframes jarvisMicPulse {
-  0%{box-shadow:0 0 0 0 rgba(108,59,245,0.7),0 0 0 0 rgba(0,212,255,0.4)}
-  70%{box-shadow:0 0 0 14px rgba(108,59,245,0),0 0 0 26px rgba(0,212,255,0)}
-  100%{box-shadow:0 0 0 0 rgba(108,59,245,0),0 0 0 0 rgba(0,212,255,0)}
-}
+.mic-btn.jarvis-active { background:rgba(108,59,245,0.3); border-color:rgba(108,59,245,0.8); box-shadow:0 0 0 0 rgba(108,59,245,0.6); animation:jarvisMicPulse 0.8s ease-in-out infinite; }
+@keyframes jarvisMicPulse { 0%{box-shadow:0 0 0 0 rgba(108,59,245,0.7),0 0 0 0 rgba(0,212,255,0.4)} 70%{box-shadow:0 0 0 14px rgba(108,59,245,0),0 0 0 26px rgba(0,212,255,0)} 100%{box-shadow:0 0 0 0 rgba(108,59,245,0),0 0 0 0 rgba(0,212,255,0)} }
 
-/* JARVIS full-screen overlay */
-#jarvis-overlay {
-  display:none;
-  position:fixed; inset:0; z-index:9999;
-  background:rgba(8,7,20,0.92);
-  backdrop-filter:blur(12px);
-  flex-direction:column; align-items:center; justify-content:center;
-  gap:32px;
-}
+#jarvis-overlay { display:none; position:fixed; inset:0; z-index:9999; background:rgba(8,7,20,0.92); backdrop-filter:blur(12px); flex-direction:column; align-items:center; justify-content:center; gap:32px; }
 #jarvis-overlay.active { display:flex; }
-
-.jarvis-ring-wrap {
-  position:relative; width:280px; height:280px;
-  display:flex; align-items:center; justify-content:center;
-}
-.jarvis-ring {
-  position:absolute; border-radius:50%; border-style:solid;
-  border-color:transparent;
-  animation-timing-function:linear;
-  animation-iteration-count:infinite;
-}
-.jr1 {
-  width:280px; height:280px;
-  border-width:2px;
-  border-top-color:rgba(108,59,245,0.9);
-  border-right-color:rgba(108,59,245,0.2);
-  animation:jarvisSpin1 1.4s linear infinite;
-}
-.jr2 {
-  width:240px; height:240px;
-  border-width:1.5px;
-  border-top-color:rgba(0,212,255,0.8);
-  border-left-color:rgba(0,212,255,0.2);
-  animation:jarvisSpin2 2s linear infinite;
-}
-.jr3 {
-  width:200px; height:200px;
-  border-width:1px;
-  border-top-color:rgba(167,139,250,0.7);
-  border-right-color:rgba(167,139,250,0.15);
-  animation:jarvisSpin1 2.8s linear infinite reverse;
-}
-.jr4 {
-  width:160px; height:160px;
-  border-width:1.5px;
-  border-top-color:rgba(0,212,255,0.5);
-  border-left-color:rgba(0,212,255,0.1);
-  animation:jarvisSpin2 1.8s linear infinite;
-}
+.jarvis-ring-wrap { position:relative; width:280px; height:280px; display:flex; align-items:center; justify-content:center; }
+.jarvis-ring { position:absolute; border-radius:50%; border-style:solid; border-color:transparent; animation-timing-function:linear; animation-iteration-count:infinite; }
+.jr1 { width:280px; height:280px; border-width:2px; border-top-color:rgba(108,59,245,0.9); border-right-color:rgba(108,59,245,0.2); animation:jarvisSpin1 1.4s linear infinite; }
+.jr2 { width:240px; height:240px; border-width:1.5px; border-top-color:rgba(0,212,255,0.8); border-left-color:rgba(0,212,255,0.2); animation:jarvisSpin2 2s linear infinite; }
+.jr3 { width:200px; height:200px; border-width:1px; border-top-color:rgba(167,139,250,0.7); border-right-color:rgba(167,139,250,0.15); animation:jarvisSpin1 2.8s linear infinite reverse; }
+.jr4 { width:160px; height:160px; border-width:1.5px; border-top-color:rgba(0,212,255,0.5); border-left-color:rgba(0,212,255,0.1); animation:jarvisSpin2 1.8s linear infinite; }
 @keyframes jarvisSpin1 { to{transform:rotate(360deg)} }
 @keyframes jarvisSpin2 { to{transform:rotate(-360deg)} }
-
-.jarvis-core {
-  position:relative; z-index:2;
-  width:90px; height:90px; border-radius:50%;
-  background:radial-gradient(circle, rgba(108,59,245,0.4) 0%, rgba(0,212,255,0.15) 60%, transparent 100%);
-  display:flex; align-items:center; justify-content:center;
-  font-size:36px;
-  animation:jarvisCorePulse 1.2s ease-in-out infinite;
-}
-@keyframes jarvisCorePulse {
-  0%,100%{transform:scale(1);filter:brightness(1)}
-  50%{transform:scale(1.08);filter:brightness(1.4)}
-}
-
-.jarvis-wave-bars {
-  display:flex; align-items:center; gap:5px; height:50px;
-}
-.jarvis-bar {
-  width:5px; border-radius:3px;
-  background:linear-gradient(to top,#6C3BF5,#00D4FF);
-  animation:jarvisBarAnim 0.6s ease-in-out infinite alternate;
-  transform-origin:bottom;
-}
+.jarvis-core { position:relative; z-index:2; width:90px; height:90px; border-radius:50%; background:radial-gradient(circle, rgba(108,59,245,0.4) 0%, rgba(0,212,255,0.15) 60%, transparent 100%); display:flex; align-items:center; justify-content:center; font-size:36px; animation:jarvisCorePulse 1.2s ease-in-out infinite; }
+@keyframes jarvisCorePulse { 0%,100%{transform:scale(1);filter:brightness(1)} 50%{transform:scale(1.08);filter:brightness(1.4)} }
+.jarvis-wave-bars { display:flex; align-items:center; gap:5px; height:50px; }
+.jarvis-bar { width:5px; border-radius:3px; background:linear-gradient(to top,#6C3BF5,#00D4FF); animation:jarvisBarAnim 0.6s ease-in-out infinite alternate; transform-origin:bottom; }
 .jarvis-bar:nth-child(1){height:12px;animation-delay:0s}
 .jarvis-bar:nth-child(2){height:26px;animation-delay:0.08s}
 .jarvis-bar:nth-child(3){height:40px;animation-delay:0.16s}
@@ -559,53 +451,17 @@ h1.hero-title { font-family:'Space Grotesk',sans-serif; font-size:clamp(50px,6vw
 .jarvis-bar:nth-child(6){height:46px;animation-delay:0.40s}
 .jarvis-bar:nth-child(7){height:30px;animation-delay:0.48s}
 .jarvis-bar:nth-child(8){height:18px;animation-delay:0.56s}
-@keyframes jarvisBarAnim {
-  from{transform:scaleY(0.3);opacity:0.4}
-  to{transform:scaleY(1);opacity:1}
-}
+@keyframes jarvisBarAnim { from{transform:scaleY(0.3);opacity:0.4} to{transform:scaleY(1);opacity:1} }
 .jarvis-bar.idle { animation:none; transform:scaleY(0.25); opacity:0.3; }
-
-.jarvis-status-text {
-  font-family:'Space Grotesk',sans-serif; font-size:22px; font-weight:600;
-  background:linear-gradient(135deg,#a78bfa,#00D4FF);
-  -webkit-background-clip:text; -webkit-text-fill-color:transparent;
-  letter-spacing:0.5px; text-align:center;
-}
-.jarvis-sub-text {
-  font-size:14px; color:rgba(255,255,255,0.4);
-  text-align:center; margin-top:-20px;
-}
-.jarvis-close-btn {
-  margin-top:8px; padding:10px 28px; border-radius:24px;
-  background:rgba(255,255,255,0.05);
-  border:1px solid rgba(255,255,255,0.1);
-  color:rgba(255,255,255,0.55); font-size:14px; cursor:pointer;
-  font-family:'Inter',sans-serif; transition:all 0.2s;
-}
+.jarvis-status-text { font-family:'Space Grotesk',sans-serif; font-size:22px; font-weight:600; background:linear-gradient(135deg,#a78bfa,#00D4FF); -webkit-background-clip:text; -webkit-text-fill-color:transparent; letter-spacing:0.5px; text-align:center; }
+.jarvis-sub-text { font-size:14px; color:rgba(255,255,255,0.4); text-align:center; margin-top:-20px; }
+.jarvis-close-btn { margin-top:8px; padding:10px 28px; border-radius:24px; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); color:rgba(255,255,255,0.55); font-size:14px; cursor:pointer; font-family:'Inter',sans-serif; transition:all 0.2s; }
 .jarvis-close-btn:hover { background:rgba(255,255,255,0.1); color:#fff; }
-
-/* Dot indicator in ring that spins */
-.jr-dot {
-  position:absolute; width:8px; height:8px; border-radius:50%;
-  top:50%; left:50%;
-  transform-origin:0 0;
-}
-.jr-dot-1 {
-  background:#6C3BF5;
-  animation:jarvisDotOrbit1 1.4s linear infinite;
-}
-.jr-dot-2 {
-  background:#00D4FF;
-  animation:jarvisDotOrbit2 2s linear infinite;
-}
-@keyframes jarvisDotOrbit1 {
-  0%   { transform:rotate(0deg)   translateX(136px) translateY(-4px); }
-  100% { transform:rotate(360deg) translateX(136px) translateY(-4px); }
-}
-@keyframes jarvisDotOrbit2 {
-  0%   { transform:rotate(0deg)   translateX(116px) translateY(-4px); }
-  100% { transform:rotate(-360deg) translateX(116px) translateY(-4px); }
-}
+.jr-dot { position:absolute; width:8px; height:8px; border-radius:50%; top:50%; left:50%; transform-origin:0 0; }
+.jr-dot-1 { background:#6C3BF5; animation:jarvisDotOrbit1 1.4s linear infinite; }
+.jr-dot-2 { background:#00D4FF; animation:jarvisDotOrbit2 2s linear infinite; }
+@keyframes jarvisDotOrbit1 { 0%   { transform:rotate(0deg)   translateX(136px) translateY(-4px); } 100% { transform:rotate(360deg) translateX(136px) translateY(-4px); } }
+@keyframes jarvisDotOrbit2 { 0%   { transform:rotate(0deg)   translateX(116px) translateY(-4px); } 100% { transform:rotate(-360deg) translateX(116px) translateY(-4px); } }
 
 #footer-sec { display:block; min-height:auto; padding:0; }
 .footer-glow-line { height:1px; background:linear-gradient(90deg,transparent,#6C3BF5,#00D4FF,transparent); }
@@ -633,7 +489,6 @@ h1.hero-title { font-family:'Space Grotesk',sans-serif; font-size:clamp(50px,6vw
 <body>
 <canvas id="bg-canvas"></canvas>
 
-<!-- JARVIS VOICE OVERLAY -->
 <div id="jarvis-overlay">
   <div class="jarvis-ring-wrap">
     <div class="jarvis-ring jr1"></div>
@@ -645,14 +500,8 @@ h1.hero-title { font-family:'Space Grotesk',sans-serif; font-size:clamp(50px,6vw
     <div class="jarvis-core" id="jarvis-core-icon">🎙️</div>
   </div>
   <div class="jarvis-wave-bars" id="jarvis-bars">
-    <div class="jarvis-bar idle"></div>
-    <div class="jarvis-bar idle"></div>
-    <div class="jarvis-bar idle"></div>
-    <div class="jarvis-bar idle"></div>
-    <div class="jarvis-bar idle"></div>
-    <div class="jarvis-bar idle"></div>
-    <div class="jarvis-bar idle"></div>
-    <div class="jarvis-bar idle"></div>
+    <div class="jarvis-bar idle"></div><div class="jarvis-bar idle"></div><div class="jarvis-bar idle"></div><div class="jarvis-bar idle"></div>
+    <div class="jarvis-bar idle"></div><div class="jarvis-bar idle"></div><div class="jarvis-bar idle"></div><div class="jarvis-bar idle"></div>
   </div>
   <div class="jarvis-status-text" id="jarvis-status">Initializing...</div>
   <div class="jarvis-sub-text" id="jarvis-sub">Tamil · Hindi · English supported</div>
@@ -795,10 +644,7 @@ bgCamera.position.z = 20;
 const particleGeo = new THREE.BufferGeometry();
 const pCount = 800;
 const pPos = new Float32Array(pCount*3), pCol = new Float32Array(pCount*3);
-for(let i=0;i<pCount;i++){
-  pPos[i*3]=(Math.random()-0.5)*80; pPos[i*3+1]=(Math.random()-0.5)*80; pPos[i*3+2]=(Math.random()-0.5)*40;
-  const t=Math.random(); pCol[i*3]=t<0.5?0.42:0; pCol[i*3+1]=t<0.5?0.23:0.83; pCol[i*3+2]=t<0.5?0.96:1;
-}
+for(let i=0;i<pCount;i++){ pPos[i*3]=(Math.random()-0.5)*80; pPos[i*3+1]=(Math.random()-0.5)*80; pPos[i*3+2]=(Math.random()-0.5)*40; const t=Math.random(); pCol[i*3]=t<0.5?0.42:0; pCol[i*3+1]=t<0.5?0.23:0.83; pCol[i*3+2]=t<0.5?0.96:1; }
 particleGeo.setAttribute('position',new THREE.BufferAttribute(pPos,3));
 particleGeo.setAttribute('color',new THREE.BufferAttribute(pCol,3));
 const particles = new THREE.Points(particleGeo,new THREE.PointsMaterial({size:0.12,vertexColors:true,transparent:true,opacity:0.7}));
@@ -856,7 +702,6 @@ function showSection(id) {
 }
 showSection('landing');
 
-// Set date
 const now = new Date();
 document.getElementById('dash-date').textContent = now.toLocaleDateString('en-IN',{weekday:'long',year:'numeric',month:'long',day:'numeric'}) + ' · All systems operational';
 
@@ -866,20 +711,14 @@ function setMode(btn, mode) {
   chatMode = mode;
 }
 
-// ================== LANGUAGE DETECTION (JS) ==================
 function detectLangDisplay(txt) {
   if(/[\u0B80-\u0BFF]/.test(txt)) return 'தமிழ்';
   if(/[\u0900-\u097F]/.test(txt)) return 'हिन्दी';
-  const tanglish = ['unga','en','naan','nee','avan','aval','ivanga','ippo','appo','eppadi',
-    'sollu','pannu','irukku','vanthu','nalla','romba','konjam','mudiyum','theriyum',
-    'padi','velai','veedu','pesu','pesanum','enakku','yennakku','illai','therla',
-    'yenakku','yenna','yeppadi','seri','sari','aama','machan','da','bro','anna','akka'];
+  const tanglish = ['unga','en','naan','nee','avan','aval','ivanga','ippo','appo','eppadi','sollu','pannu','irukku','vanthu','nalla','romba','konjam','mudiyum','theriyum','padi','velai','veedu','pesu','pesanum','enakku','yennakku','illai','therla','yenakku','yenna','yeppadi','seri','sari','aama','machan','da','bro','anna','akka'];
   const lower = txt.toLowerCase();
   let tc = 0;
   for(const k of tanglish){ if(lower.includes(k)){tc++;if(tc>=2)return 'தமிழ்';} }
-  const hinglish = ['aap','tum','mai','hum','kya','kaise','kab','kyu','kaun',
-    'hai','hoon','raha','kar','karo','karna','jao','aao','batana','suno','dekho',
-    'acha','theek','sahi','nahi','haan','ji','yaar','bhai','bahut','bilkul'];
+  const hinglish = ['aap','tum','mai','hum','kya','kaise','kab','kyu','kaun','hai','hoon','raha','kar','karo','karna','jao','aao','batana','suno','dekho','acha','theek','sahi','nahi','haan','ji','yaar','bhai','bahut','bilkul'];
   let hc = 0;
   for(const k of hinglish){ if(lower.includes(k)){hc++;if(hc>=2)return 'हिन्दी';} }
   return 'English';
@@ -892,10 +731,11 @@ function getLangCode(ld) {
 }
 
 // ============================================================
-// ================== 🔥 FIXED TTS WITH FALLBACK ==============
+// ================== 🔥 ULTRA ROBUST TTS =====================
 // ============================================================
 async function speakText(text, langDisplay) {
     if (!text) return;
+    console.log('🔊 TTS Request:', text.substring(0, 30), 'Lang:', langDisplay);
     const langCode = getLangCode(langDisplay);
     let ttsFailed = false;
 
@@ -908,14 +748,13 @@ async function speakText(text, langDisplay) {
         const data = await res.json();
         if (data.audio) {
             const audio = new Audio('data:audio/mp3;base64,' + data.audio);
-            // If audio play fails → fallback
+            audio.onerror = () => { console.log('Audio error, fallback'); fallbackToBrowserSpeech(text, langDisplay); };
             audio.play().catch(() => {
-                console.log('⚠️ Audio play blocked, fallback to browser speech');
+                console.log('⚠️ Audio play blocked, fallback');
                 fallbackToBrowserSpeech(text, langDisplay);
             });
-            return; // Success
+            return;
         } else {
-            // No audio → fallback
             ttsFailed = true;
         }
     } catch (e) {
@@ -928,38 +767,69 @@ async function speakText(text, langDisplay) {
     }
 }
 
-// ================== BROWSER SPEECH FALLBACK ==================
 function fallbackToBrowserSpeech(text, langDisplay) {
     if (!window.speechSynthesis) {
         console.warn('No speech synthesis');
         return;
     }
+    // Cancel old
     window.speechSynthesis.cancel();
 
-    const lmap = { 'ta': 'ta-IN', 'hi': 'hi-IN', 'en': 'en-US' };
-    const lang = lmap[getLangCode(langDisplay)] || 'en-US';
-
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = lang;
-    utterance.rate = 0.9;
-    utterance.pitch = 1;
-
-    // If target language fails, retry English
-    utterance.onerror = (e) => {
-        if (e.error === 'language-unavailable' && lang !== 'en-US') {
-            console.log('🔄 Retrying with English voice');
-            const fallback = new SpeechSynthesisUtterance(text);
-            fallback.lang = 'en-US';
-            fallback.rate = 0.9;
-            window.speechSynthesis.speak(fallback);
-        }
-    };
-
-    window.speechSynthesis.speak(utterance);
-    console.log('🔊 Speaking via browser:', lang);
+    // Ensure voices are loaded
+    let voices = window.speechSynthesis.getVoices();
+    if (voices.length === 0) {
+        window.speechSynthesis.onvoiceschanged = () => {
+            voices = window.speechSynthesis.getVoices();
+            speakWithVoice(text, langDisplay, voices);
+        };
+    } else {
+        speakWithVoice(text, langDisplay, voices);
+    }
 }
 
-// ================== JARVIS OVERLAY HELPERS ==================
+function speakWithVoice(text, langDisplay, voices) {
+    const lmap = { 'ta': 'ta-IN', 'hi': 'hi-IN', 'en': 'en-US' };
+    const targetLang = lmap[getLangCode(langDisplay)] || 'en-US';
+    
+    // Try to find a native voice
+    let nativeVoice = null;
+    for (const v of voices) {
+        if (v.lang.startsWith(targetLang.split('-')[0])) {
+            nativeVoice = v;
+            break;
+        }
+    }
+    // Fallback to English if no native voice
+    if (!nativeVoice && targetLang !== 'en-US') {
+        for (const v of voices) {
+            if (v.lang.startsWith('en')) {
+                nativeVoice = v;
+                break;
+            }
+        }
+    }
+
+    const utterance = new SpeechSynthesisUtterance(text);
+    if (nativeVoice) {
+        utterance.voice = nativeVoice;
+        utterance.lang = nativeVoice.lang;
+    } else {
+        utterance.lang = 'en-US';
+    }
+    utterance.rate = 0.9;
+    utterance.pitch = 1;
+    utterance.volume = 1;
+
+    utterance.onerror = (e) => {
+        console.warn('Speech error:', e.error);
+        // If still failing, just skip
+    };
+
+    console.log('🔊 Speaking via browser:', utterance.lang);
+    window.speechSynthesis.speak(utterance);
+}
+
+// ================== JARVIS HELPERS ==================
 function showJarvis(statusText, subText, listening) {
   document.getElementById('jarvis-overlay').classList.add('active');
   document.getElementById('jarvis-status').textContent = statusText;
@@ -980,26 +850,34 @@ function cancelJarvis() {
   hideJarvis();
 }
 
-// ================== JARVIS AUTO-GREET ==================
+// ================== JARVIS GREET (FIXED) ==================
 function jarvisGreet() {
   const greetings = [
     { lang:'தமிழ்', text:'Vanakkam! Naan Samvad AI. Enna help pannalaam?', code:'ta' },
     { lang:'हिन्दी', text:'Namaste! Main Samvad AI hoon. Kaise help karoon?', code:'hi' },
     { lang:'English', text:'Hello! I am Samvad AI. How can I help you today?', code:'en' }
   ];
-  const g = greetings[Math.floor(Math.random()*greetings.length)];
+  // Select a random greeting
+  const g = greetings[Math.floor(Math.random() * greetings.length)];
+  
+  // Show overlay
   showJarvis('Hello! Pesungal...', g.lang + ' detected', true);
-  setTimeout(()=>{
+  
+  // Try to speak the greeting
+  setTimeout(() => {
     speakText(g.text, g.lang);
-    document.getElementById('jarvis-status').textContent = 'Listening...';
-    document.getElementById('jarvis-sub').textContent = 'Speak now — ' + g.lang;
-  }, 600);
+    // Update status after a moment to "Listening"
+    setTimeout(() => {
+      document.getElementById('jarvis-status').textContent = 'Listening...';
+      document.getElementById('jarvis-sub').textContent = 'Speak now — ' + g.lang;
+      document.getElementById('jarvis-core-icon').textContent = '🎙️';
+    }, 400);
+  }, 500);
 }
 
-// ================== FIXED JARVIS MIC WITH VOICE INPUT ==================
+// ================== JARVIS MIC ==================
 document.getElementById('micBtn').addEventListener('click', function() {
   if(jarvisActive){ cancelJarvis(); return; }
-
   if(!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)){
     alert('Voice input requires Chrome browser.');
     return;
@@ -1007,10 +885,8 @@ document.getElementById('micBtn').addEventListener('click', function() {
 
   jarvisActive = true;
   this.classList.add('jarvis-active');
-
-  // Show Jarvis overlay with greeting
   showJarvis('Initializing Samvad AI...', 'Starting up...', false);
-  setTimeout(()=>{ jarvisGreet(); startJarvisRecognition(); }, 800);
+  setTimeout(()=>{ jarvisGreet(); startJarvisRecognition(); }, 1000);
 });
 
 function startJarvisRecognition() {
@@ -1018,7 +894,7 @@ function startJarvisRecognition() {
   const recognition = new SR();
   jarvisRecognition = recognition;
 
-  recognition.lang = 'en-US';  // en-US handles mixed languages best
+  recognition.lang = 'en-US';
   recognition.continuous = false;
   recognition.interimResults = true;
   recognition.maxAlternatives = 3;
@@ -1057,7 +933,7 @@ function startJarvisRecognition() {
       document.getElementById('chat-input').value = finalTranscript;
       hideJarvis();
       sendChatMsg();
-    }, 700);
+    }, 500);
   };
 
   recognition.onerror = (event) => {
@@ -1125,10 +1001,7 @@ async function sendChatMsg() {
         }
       }
     }
-
-    // 🔥 Speak AI reply using the FIXED function
     await speakText(aiReply, ld);
-
   } catch(err) {
     console.error('Chat error:',err);
     document.getElementById(tid)?.remove();
@@ -1193,7 +1066,6 @@ window.addEventListener('resize',()=>{
 """
 
 # ============================================================
-# ============================================================
 # ROUTES
 # ============================================================
 @app.route('/')
@@ -1213,10 +1085,10 @@ def text_to_speech():
         tts.write_to_fp(buf)
         buf.seek(0)
         audio_b64 = base64.b64encode(buf.read()).decode('utf-8')
-        print(f"OK gTTS: lang={lang_code}, chars={len(text)}")
+        print(f"✅ gTTS Success: lang={lang_code}, chars={len(text)}")
         return jsonify({'audio': audio_b64})
     except Exception as e:
-        print(f"gTTS Error: {e}")
+        print(f"❌ gTTS Error: {e}")
         return jsonify({'audio':None,'error':str(e)})
 
 @app.route('/api/chat-stream', methods=['POST'])
@@ -1257,7 +1129,7 @@ def chat_stream():
 
     def generate():
         if not client:
-            yield "data: Set GROQ_API_KEY in .env\n\n"
+            yield "data: ⚠️ Set GROQ_API_KEY in Render Env Vars.\n\n"
             yield "data: [DONE]\n\n"
             return
         try:
@@ -1276,7 +1148,7 @@ def chat_stream():
                     yield f"data: {content}\n\n"
             convos[cid]['messages'].append({'role':'assistant','content':full_reply,'language':lang})
         except Exception as e:
-            yield f"data: Error: {str(e)[:100]}\n\n"
+            yield f"data: ⚠️ Error: {str(e)[:100]}\n\n"
         finally:
             yield "data: [DONE]\n\n"
 
@@ -1329,7 +1201,7 @@ def history():
 def create_lead():
     data = request.json or {}
     pid = f"FLWZ-{uuid.uuid4().hex[:8].upper()}"
-    return jsonify({'success':True,'message':'Lead converted to FlowZint Project!','project_id':pid,'workspace_url':f'https://flowzint.in/workspace/{pid}'})
+    return jsonify({'success':True,'message':'✅ Lead converted to FlowZint Project!','project_id':pid,'workspace_url':f'https://flowzint.in/workspace/{pid}'})
 
 @app.route('/api/health')
 def health():
@@ -1338,19 +1210,19 @@ def health():
         'groq':'Connected' if client else 'Missing GROQ_API_KEY',
         'gtts':'Installed' if GTTS_AVAILABLE else 'Run: pip install gTTS',
         'agora':'Configured' if (AGORA_APP_ID and AGORA_APP_ID!='demo') else 'Simulated mode',
-        'version':'11.1 Jarvis Edition - Fixed TTS Fallback'
+        'version':'12.0 Jarvis Edition - Ultra Robust TTS'
     })
 
 if __name__ == '__main__':
     port = int(os.getenv("PORT",5000))
     print("\n" + "="*70)
-    print("  SAMVAD AI v11.1 - JARVIS EDITION (TTS FALLBACK FIXED)")
+    print("  SAMVAD AI v12.0 - JARVIS EDITION (ROBUST TTS)")
     print("="*70)
     print(f"  Server   : http://localhost:{port}")
     print(f"  Groq AI  : {'READY' if client else 'Set GROQ_API_KEY'}")
     print(f"  gTTS     : {'INSTALLED' if GTTS_AVAILABLE else 'Run: pip install gTTS'}")
     print(f"  Agora    : {'CONFIGURED' if (AGORA_APP_ID and AGORA_APP_ID!='demo') else 'Simulated'}")
     print("="*70)
-    print("  🔥 FIX: If gTTS audio fails, browser speech will auto-takeover.")
+    print("  ✅ Fixed: gTTS fail → auto Browser Speech with native voice fallback.")
     print("="*70+"\n")
-    app.run(debug=True, host='0.0.0.0', port=port)
+    app.run(debug=False, host='0.0.0.0', port=port)
