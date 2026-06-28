@@ -39,7 +39,7 @@ convos = {}
 cnt = 0
 calls = {}
 
-# Language Detection (Same as before - keeping it short for space, but full logic is needed)
+# ====================== LANGUAGE DETECTION (TANGLISH/HINGLISH) ======================
 TAMIL_SCRIPT = set('அஆஇஈஉஊஎஏஐஒஓஔகஙசஜஞடணதநபமயரலவழளறனஷஸஹ')
 HINDI_SCRIPT = set('अआइईउऊएऐओऔकखगघचछजझटठडढणतथदधनपफबभमयरलवशषसह')
 
@@ -109,14 +109,14 @@ def detect_language(text):
     return "English"
 
 MODE_PROMPTS = {
-    "sales": """You are an AGGRESSIVE but FRIENDLY Sales Agent at FlowZint.
-Always capture lead details (Name, Phone, Company, Requirement) within 2-3 exchanges.
-Reply ONLY in user's language. Keep replies SHORT: 2-3 sentences.""",
+    "sales": """You are a FRIENDLY Sales Agent at FlowZint.
+Always capture lead details (Name, Phone, Company, Requirement).
+Keep replies SHORT: 2-3 sentences.""",
     "support": """You are a PATIENT Technical Support Agent at FlowZint.
-Ask clear questions. Give step-by-step solutions. Reply ONLY in user's language.
+Ask clear questions. Give step-by-step solutions.
 Keep replies CONCISE: 3-4 sentences.""",
     "customer": """You are an EMPATHETIC Customer Care Agent at FlowZint.
-Always apologize first. Offer solutions. Reply ONLY in user's language.
+Always apologize first. Offer solutions.
 Short, human replies: 2-3 sentences."""
 }
 
@@ -170,7 +170,7 @@ def gen_agora_token(channel, uid=0, role=1, expire_seconds=3600):
         return {"token": f"TOKEN_{channel}_{int(time.time())}", "app_id": AGORA_APP_ID, "channel": channel, "uid": uid, "simulated": True}
 
 # ============================================================
-# UI HTML – CONTINUOUS CONVERSATION MODE
+# UI HTML – CONTINUOUS CONVERSATION
 # ============================================================
 UI_HTML = r"""
 <!DOCTYPE html>
@@ -593,7 +593,7 @@ let isTyping = false;
 window.convId = null;
 let jarvisRecognition = null;
 let jarvisActive = false;
-let isProcessing = false; // To prevent overlapping requests
+let isProcessing = false; 
 let currentTranscript = '';
 
 function showSection(id) {
@@ -723,14 +723,9 @@ function cancelJarvis() {
 
 // ================== CONTINUOUS CONVERSATION LOGIC ==================
 
-// Function to restart listening
 function startListening() {
     if (!jarvisActive) return;
-    if (isProcessing) {
-        console.log('Waiting for processing to finish...');
-        return;
-    }
-    // If recognition already exists, stop and restart
+    if (isProcessing) { console.log('Waiting for processing...'); return; }
     if (jarvisRecognition) {
         try { jarvisRecognition.stop(); } catch(e) {}
         jarvisRecognition = null;
@@ -778,7 +773,6 @@ function startListening() {
             document.getElementById('jarvis-status').textContent = display.length > 40 ? display.substring(0,40)+'...' : display;
             document.getElementById('jarvis-sub').textContent = 'Language: ' + lang + ' (click Send or wait)';
         }
-        // Auto-send after 3 seconds of silence
         silenceTimer = setTimeout(() => {
             if (finalText.trim() || interimText.trim()) {
                 processVoiceInput(finalText + interimText);
@@ -789,27 +783,21 @@ function startListening() {
     recognition.onerror = (event) => {
         console.warn('Mic Error:', event.error);
         if (event.error === 'no-speech' || event.error === 'aborted') {
-            // Silently ignore, maybe restart if still active
+            // Silent fail
         } else if (event.error === 'not-allowed') {
             alert('Please allow microphone access.');
             cancelJarvis();
         } else {
-            // Try to restart
-            if (jarvisActive && !isProcessing) {
-                setTimeout(() => startListening(), 500);
-            }
+            if (jarvisActive && !isProcessing) setTimeout(() => startListening(), 500);
         }
     };
 
     recognition.onend = () => {
         console.log('🔇 Recognition ended.');
-        // If still active and not processing, restart automatically
         if (jarvisActive && !isProcessing) {
-            // Check if we have pending text
             if (finalText.trim() || interimText.trim()) {
                 processVoiceInput(finalText + interimText);
             } else {
-                // Restart listening
                 setTimeout(() => startListening(), 300);
             }
         }
@@ -818,40 +806,27 @@ function startListening() {
     recognition.start();
 }
 
-// Process voice input -> Send to AI -> Speak reply -> Continue loop
 function processVoiceInput(text) {
     if (!text.trim()) return;
     if (isProcessing) return;
     isProcessing = true;
     
-    // Stop recognition temporarily
-    if (jarvisRecognition) {
-        try { jarvisRecognition.stop(); } catch(e) {}
-    }
+    if (jarvisRecognition) { try { jarvisRecognition.stop(); } catch(e) {} }
     
-    // Clear the overlay status
     showJarvis('Processing...', 'AI is thinking...', false);
     document.getElementById('jarvis-send-btn').style.display = 'none';
     
-    // Set the text in the chat input and send
     document.getElementById('chat-input').value = text.trim();
     
-    // Call sendChatMsg with speak mode enabled
     sendChatMsg(true).then(() => {
-        // Wait a bit and then restart listening
         isProcessing = false;
-        if (jarvisActive) {
-            setTimeout(() => startListening(), 1500);
-        }
+        if (jarvisActive) setTimeout(() => startListening(), 1500);
     }).catch(() => {
         isProcessing = false;
-        if (jarvisActive) {
-            setTimeout(() => startListening(), 1500);
-        }
+        if (jarvisActive) setTimeout(() => startListening(), 1500);
     });
 }
 
-// ================== JARVIS MIC START ==================
 document.getElementById('micBtn').addEventListener('click', function() {
   if(jarvisActive){ cancelJarvis(); return; }
   
@@ -864,10 +839,8 @@ document.getElementById('micBtn').addEventListener('click', function() {
   isProcessing = false;
   this.classList.add('jarvis-active');
   
-  // Show overlay with greeting
   showJarvis('Initializing Samvad AI...', 'Starting up...', false);
   
-  // Greet and then start listening
   const greetings = [
     { lang:'தமிழ்', text:'Vanakkam! Naan Samvad AI. Enna help pannalaam?', code:'ta' },
     { lang:'हिन्दी', text:'Namaste! Main Samvad AI hoon. Kaise help karoon?', code:'hi' },
@@ -878,10 +851,7 @@ document.getElementById('micBtn').addEventListener('click', function() {
   showJarvis('Hello! Pesungal...', g.lang + ' detected', true);
   
   speakText(g.text, g.lang, () => {
-      // After greeting, start listening
-      if (jarvisActive) {
-          startListening();
-      }
+      if (jarvisActive) startListening();
   });
 });
 
@@ -935,7 +905,6 @@ async function sendChatMsg(shouldSpeak = false) {
       }
     }
     
-    // Speak only if shouldSpeak is true
     if (shouldSpeak === true) {
         console.log('🔊 Speaking Reply...');
         await new Promise((resolve) => {
@@ -943,7 +912,7 @@ async function sendChatMsg(shouldSpeak = false) {
         });
     }
     
-    return aiReply; // Return for the voice loop
+    return aiReply;
     
   } catch(err) {
     console.error('Chat error:',err);
@@ -956,7 +925,6 @@ async function sendChatMsg(shouldSpeak = false) {
   }
 }
 
-// ================== ENTER KEY (Text Only) ==================
 document.getElementById('chat-input').addEventListener('keydown', function(e) { 
     if(e.key === 'Enter') { 
         e.preventDefault(); 
@@ -1051,6 +1019,7 @@ def chat_stream():
     mode = data.get('mode','support')
     if not msg: return jsonify({'error':'Message required'}),400
 
+    # Detect language (Tanglish/Hinglish supported)
     lang = detect_language(msg)
     if not cid or cid not in convos:
         cnt += 1
@@ -1058,24 +1027,25 @@ def chat_stream():
         convos[cid] = {'id':cid,'messages':[],'language':lang,'mode':mode}
     convos[cid]['messages'].append({'role':'user','content':msg,'language':lang})
 
-    lang_instruction = {
-        "Tamil": "MANDATORY: Reply in Tamil/Tanglish. Mix Tamil words naturally.",
-        "Hindi": "MANDATORY: Reply in Hindi/Hinglish. Mix Hindi words naturally.",
-        "English": "Reply in clear, friendly English."
-    }
+    # 🔥 FIX: Extremely strict system prompt to force output language
+    system_prompt = f"""You are Samvad AI - FlowZint's intelligent business assistant.
+Current Mode: {mode.upper()}
+{MODE_PROMPTS.get(mode, MODE_PROMPTS['support'])}
 
-    system_prompt = (
-        f"You are Samvad AI - FlowZint's intelligent business assistant.\n"
-        f"Current Mode: {mode.upper()}\n\n"
-        f"{MODE_PROMPTS.get(mode, MODE_PROMPTS['support'])}\n\n"
-        f"USER'S LANGUAGE: {lang}\n"
-        f"{lang_instruction.get(lang, lang_instruction['English'])}\n\n"
-        f"RULES:\n"
-        f"1. NEVER switch language\n"
-        f"2. Keep replies SHORT: 2-3 sentences max\n"
-        f"3. Be warm and conversational, not robotic"
-    )
+🚨 **LANGUAGE LOCK (DO NOT BREAK)** 🚨
+The user wrote in: {lang}.
+You MUST reply ONLY in {lang} language.
+- If {lang} is Tamil -> Reply in Tamil script (அ ஆ இ).
+- If {lang} is Hindi -> Reply in Hindi script (अ आ इ).
+- If {lang} is English -> Reply in English.
+NEVER reply in English if user wrote in Tamil or Hindi.
+NEVER mix languages. Output 100% pure {lang}.
 
+RULES:
+1. Keep replies SHORT: 2-3 sentences max.
+2. Be warm and conversational.
+"""
+    
     def generate():
         if not client:
             yield "data: ⚠️ Set GROQ_API_KEY in Render Env Vars.\n\n"
@@ -1159,21 +1129,20 @@ def health():
         'groq':'Connected' if client else 'Missing GROQ_API_KEY',
         'gtts':'Installed' if GTTS_AVAILABLE else 'Run: pip install gTTS',
         'agora':'Configured' if (AGORA_APP_ID and AGORA_APP_ID!='demo') else 'Simulated mode',
-        'version':'15.0 - CONTINUOUS CONVERSATION'
+        'version':'16.0 - FORCED LANGUAGE FIX'
     })
 
 if __name__ == '__main__':
     port = int(os.getenv("PORT",5000))
     print("\n" + "="*70)
-    print("  SAMVAD AI v15.0 - CONTINUOUS CONVERSATION")
+    print("  SAMVAD AI v16.0 - FORCED LANGUAGE FIX")
     print("="*70)
     print(f"  Server   : http://localhost:{port}")
     print(f"  Groq AI  : {'READY' if client else 'Set GROQ_API_KEY'}")
     print(f"  gTTS     : {'INSTALLED' if GTTS_AVAILABLE else 'Run: pip install gTTS'}")
     print("="*70)
-    print("  ✅ CHAT (Type + Enter)  -> Text only, NO voice")
-    print("  ✅ MIC (Click once)     -> Continuous Voice Conversation")
-    print("  ✅ AI listens -> Speaks -> Listens again (Auto-loop)")
-    print("  ✅ Click 'End Conversation' to stop")
+    print("  ✅ CHAT (Type) -> Text only.")
+    print("  ✅ MIC (Click) -> Continuous Voice Conversation.")
+    print("  ✅ AI forced to reply in YOUR language (Tamil/Hindi/English).")
     print("="*70+"\n")
     app.run(debug=False, host='0.0.0.0', port=port)
