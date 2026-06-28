@@ -109,84 +109,20 @@ def detect_language(text):
     return "English"
 
 MODE_PROMPTS = {
-    "sales": """You are an AGGRESSIVE but FRIENDLY Sales Agent at FlowZint — India's #1 AI-powered project management platform.
-
-YOUR GOALS:
-1. ALWAYS capture lead details (Name, Phone number, Company, Requirement) within 2-3 exchanges
-2. Highlight FlowZint benefits: AI automation, team collaboration, saves 40% time
-3. Offer free trial or demo: "Shall I create a free trial project in FlowZint for you?"
-4. Handle objections warmly: price → "We have plans starting ₹999/month", competitor → "FlowZint is built for Indian teams"
-
-TANGLISH TIPS (when user writes in Tanglish/Tamil):
-- Use casual Tamil words naturally: "Nalla question!", "Romba useful-a irukkum", "Konjam time edunga"
-- Mix English naturally: "FlowZint-la enna features irukku nu paarkalama?"
-- Never sound robotic — be like a friendly colleague
-
-HINGLISH TIPS (when user writes in Hinglish/Hindi):
-- Use casual Hindi naturally: "Bilkul sahi!", "Bahut acha question!", "Ek minute ruko"
-- Mix English naturally: "FlowZint mein aapki team ke liye perfect features hain"
-- Sound like a helpful dost, not a corporate robot
-
-CRITICAL LANGUAGE RULE:
-- User wrote in Tamil/Tanglish → Reply ONLY in Tamil/Tanglish (mix Tamil words + English naturally)
-- User wrote in Hindi/Hinglish → Reply ONLY in Hindi/Hinglish
-- User wrote in English → Reply in English
-- NEVER switch to English if user started in Tamil/Hindi
-- Keep replies SHORT: 2-3 sentences max""",
-
+    "sales": """You are an AGGRESSIVE but FRIENDLY Sales Agent at FlowZint.
+Always capture lead details (Name, Phone, Company, Requirement) within 2-3 exchanges.
+Reply ONLY in user's language. Keep replies SHORT: 2-3 sentences.""",
     "support": """You are a PATIENT Technical Support Agent at FlowZint.
-
-YOUR APPROACH:
-1. First, understand the problem clearly — ask for error message/screenshot if needed
-2. Give STEP-BY-STEP solutions, numbered clearly
-3. If unresolved: "Naan ticket raise pannuven, 24 manikku neral response varum" (Tamil) / "Main ticket raise karta hoon, 24 ghante mein resolve hoga" (Hindi)
-4. Always end with: "Vera ethavathu help venuma?" (Tamil) / "Kuch aur help chahiye?" (Hindi)
-
-COMMON ISSUES TO HANDLE:
-- Login problems: clear cache, reset password steps
-- Integration errors: check API keys, reconnect
-- Performance: clear browser cache, try incognito
-- Data sync: manual refresh, check internet
-
-TANGLISH STYLE: "Idha try pannunga — Settings > Account > Reset. Seri-a vandhachana sollunga!"
-HINGLISH STYLE: "Yeh karo — Settings > Account > Reset. Ho gaya toh batao!"
-
-CRITICAL LANGUAGE RULE:
-- Match user's language EXACTLY — Tamil stays Tamil, Hindi stays Hindi
-- Be warm and patient — never make user feel dumb
-- Keep replies CONCISE: 3-4 sentences""",
-
+Ask clear questions. Give step-by-step solutions. Reply ONLY in user's language.
+Keep replies CONCISE: 3-4 sentences.""",
     "customer": """You are an EMPATHETIC Customer Care Agent at FlowZint.
-
-YOUR APPROACH:
-1. ALWAYS apologize first: "Romba sorry-a feel panrom" (Tamil) / "Bahut dukh hai" (Hindi)
-2. Validate their feelings: "Unga frustration puriyuthu" / "Aapki baat samajh aati hai"
-3. Offer concrete solution or compensation
-4. Follow up: "Intha solution work aachaa?" / "Yeh kaam aaya?"
-
-COMPENSATION OPTIONS:
-- Minor issues: 1-month free Pro upgrade
-- Major issues: Full refund or account credit
-- Data loss: Priority recovery + 3-month free
-
-TANGLISH STYLE: "Ayyo sorry da! Idhu naanga thappu. Unga account-ku free 1 month Pro tharom, seri-ya?"
-HINGLISH STYLE: "Arre yaar, bahut sorry! Yeh humari galti hai. Free 1 month Pro de rahe hain, theek hai?"
-
-CRITICAL LANGUAGE RULE:
-- Be EXTRA warm and personal in Tamil/Hindi — use "da/di" (Tamil) or "yaar/bhai" (Hindi) naturally
-- Never be corporate/robotic
-- Short, human replies: 2-3 sentences"""
+Always apologize first. Offer solutions. Reply ONLY in user's language.
+Short, human replies: 2-3 sentences."""
 }
 
 def gen_agora_token(channel, uid=0, role=1, expire_seconds=3600):
     if not AGORA_APP_ID or AGORA_APP_ID == "demo":
-        return {
-            "token": f"SIM_{channel}_{int(time.time())}",
-            "app_id": AGORA_APP_ID,
-            "channel": channel,
-            "uid": uid,
-            "simulated": True
-        }
+        return {"token": f"SIM_{channel}_{int(time.time())}", "app_id": AGORA_APP_ID, "channel": channel, "uid": uid, "simulated": True}
     try:
         VERSION = "007"
         privilege_expired_ts = int(time.time()) + expire_seconds
@@ -194,19 +130,12 @@ def gen_agora_token(channel, uid=0, role=1, expire_seconds=3600):
         PRIVILEGE_PUBLISH_AUDIO_STREAM = 2
         PRIVILEGE_PUBLISH_VIDEO_STREAM = 3
         PRIVILEGE_PUBLISH_DATA_STREAM = 4
-        privileges = {
-            PRIVILEGE_JOIN_CHANNEL: privilege_expired_ts,
-            PRIVILEGE_PUBLISH_AUDIO_STREAM: privilege_expired_ts,
-            PRIVILEGE_PUBLISH_VIDEO_STREAM: privilege_expired_ts,
-            PRIVILEGE_PUBLISH_DATA_STREAM: privilege_expired_ts,
-        }
+        privileges = {PRIVILEGE_JOIN_CHANNEL: privilege_expired_ts, PRIVILEGE_PUBLISH_AUDIO_STREAM: privilege_expired_ts, PRIVILEGE_PUBLISH_VIDEO_STREAM: privilege_expired_ts, PRIVILEGE_PUBLISH_DATA_STREAM: privilege_expired_ts}
         nonce = uuid.uuid4().hex
         ts = int(time.time())
         import struct
-        def pack_uint16(x):
-            return struct.pack('<H', int(x))
-        def pack_uint32(x):
-            return struct.pack('<I', int(x))
+        def pack_uint16(x): return struct.pack('<H', int(x))
+        def pack_uint32(x): return struct.pack('<I', int(x))
         def pack_string(s):
             b = s.encode('utf-8')
             return pack_uint16(len(b)) + b
@@ -222,38 +151,17 @@ def gen_agora_token(channel, uid=0, role=1, expire_seconds=3600):
         signing_key = hmac.new(signing_key, str(uid).encode('utf-8'), hashlib.sha256).digest()
         signing_key = hmac.new(signing_key, channel.encode('utf-8'), hashlib.sha256).digest()
         signature = hmac.new(signing_key, msg, hashlib.sha256).digest()
-        content = (
-            pack_string(AGORA_APP_ID) +
-            pack_string(channel) +
-            pack_string(str(uid)) +
-            pack_string(nonce) +
-            pack_uint32(ts) +
-            pack_uint16(len(privileges))
-        )
-        for k, v in sorted(privileges.items()):
-            content += pack_uint16(k) + pack_uint32(v)
+        content = pack_string(AGORA_APP_ID) + pack_string(channel) + pack_string(str(uid)) + pack_string(nonce) + pack_uint32(ts) + pack_uint16(len(privileges))
+        for k, v in sorted(privileges.items()): content += pack_uint16(k) + pack_uint32(v)
         content += pack_uint16(len(signature)) + signature
         token = VERSION + base64.b64encode(content).decode('utf-8')
-        return {
-            "token": token,
-            "app_id": AGORA_APP_ID,
-            "channel": channel,
-            "uid": uid,
-            "simulated": False,
-            "expires_at": privilege_expired_ts
-        }
+        return {"token": token, "app_id": AGORA_APP_ID, "channel": channel, "uid": uid, "simulated": False, "expires_at": privilege_expired_ts}
     except Exception as e:
         print(f"Agora token error: {e}")
-        return {
-            "token": f"TOKEN_{channel}_{int(time.time())}",
-            "app_id": AGORA_APP_ID,
-            "channel": channel,
-            "uid": uid,
-            "simulated": True
-        }
+        return {"token": f"TOKEN_{channel}_{int(time.time())}", "app_id": AGORA_APP_ID, "channel": channel, "uid": uid, "simulated": True}
 
 # ============================================================
-# UI HTML – FULLY FIXED TTS & JARVIS LOGIC
+# UI HTML – CHAT TEXT ONLY, MIC = VOICE CONVERSATION
 # ============================================================
 UI_HTML = r"""
 <!DOCTYPE html>
@@ -272,7 +180,6 @@ html { scroll-behavior:smooth; }
 body { background:var(--bg); color:var(--white); font-family:'Inter',sans-serif; overflow-x:hidden; }
 #bg-canvas { position:fixed; top:0; left:0; width:100%; height:100%; z-index:0; pointer-events:none; }
 .page { position:relative; z-index:1; }
-
 nav { position:fixed; top:0; left:0; right:0; z-index:1000; display:flex; align-items:center; justify-content:space-between; padding:0 60px; height:68px; background:rgba(15,14,35,0.75); backdrop-filter:blur(20px); border-bottom:1px solid rgba(108,59,245,0.15); }
 .nav-logo { font-family:'Space Grotesk',sans-serif; font-size:22px; font-weight:700; background:linear-gradient(135deg,#6C3BF5,#00D4FF); -webkit-background-clip:text; -webkit-text-fill-color:transparent; letter-spacing:-0.5px; }
 .nav-links { display:flex; align-items:center; gap:8px; }
@@ -280,11 +187,9 @@ nav { position:fixed; top:0; left:0; right:0; z-index:1000; display:flex; align-
 .nav-links a:hover { color:#fff; background:rgba(255,255,255,0.05); }
 .nav-links a.active { color:var(--cyan); }
 .nav-cta { background:linear-gradient(135deg,#6C3BF5,#00D4FF) !important; color:#fff !important; -webkit-text-fill-color:#fff !important; padding:9px 22px !important; border-radius:25px !important; font-weight:600 !important; }
-
 section { min-height:100vh; padding:100px 60px 80px; display:none; }
 section.active { display:block; }
 #landing { display:flex; align-items:center; justify-content:space-between; gap:60px; padding-top:120px; }
-
 .hero-left { flex:1; max-width:580px; }
 .hero-badge { display:inline-flex; align-items:center; gap:8px; background:rgba(108,59,245,0.12); border:1px solid rgba(108,59,245,0.35); border-radius:20px; padding:7px 16px; font-size:13px; color:var(--purple-light); margin-bottom:28px; }
 .badge-dot { width:7px; height:7px; background:var(--purple); border-radius:50%; animation:badgePulse 2s infinite; }
@@ -313,16 +218,13 @@ h1.hero-title { font-family:'Space Grotesk',sans-serif; font-size:clamp(50px,6vw
 @keyframes orbit2{0%,100%{transform:translate(0,0) rotate(0deg)}50%{transform:translate(20px,-20px) rotate(180deg)}}
 @keyframes orbit3{0%,100%{transform:translate(0,0)}50%{transform:translate(-20px,-30px)}}
 @keyframes orbit4{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(-15px,15px) scale(1.15)}}
-
 .stats-bar { display:flex; justify-content:center; border-top:1px solid rgba(255,255,255,0.05); border-bottom:1px solid rgba(255,255,255,0.05); background:rgba(0,0,0,0.2); }
 .stat-item { flex:1; text-align:center; padding:36px 20px; border-right:1px solid rgba(255,255,255,0.06); }
 .stat-item:last-child { border-right:none; }
 .stat-num { font-family:'Space Grotesk',sans-serif; font-size:38px; font-weight:700; background:linear-gradient(135deg,#6C3BF5,#00D4FF); -webkit-background-clip:text; -webkit-text-fill-color:transparent; display:block; }
 .stat-label { font-size:13px; color:rgba(255,255,255,0.45); margin-top:6px; }
-
 .sec-title { font-family:'Space Grotesk',sans-serif; font-size:clamp(34px,4vw,52px); font-weight:700; letter-spacing:-1px; margin-bottom:14px; text-align:center; }
 .sec-sub { font-size:16px; color:rgba(255,255,255,0.5); text-align:center; margin-bottom:64px; line-height:1.6; }
-
 #features { display:block; min-height:100vh; padding:120px 60px 80px; }
 .feature-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:24px; max-width:1000px; margin:0 auto; }
 .feat-card { background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.07); border-radius:24px; padding:40px 36px; position:relative; overflow:hidden; cursor:default; transition:all 0.4s cubic-bezier(0.23,1,0.32,1); }
@@ -337,7 +239,6 @@ h1.hero-title { font-family:'Space Grotesk',sans-serif; font-size:clamp(50px,6vw
 .feat-card h3 { font-family:'Space Grotesk',sans-serif; font-size:22px; font-weight:600; margin-bottom:12px; }
 .feat-card p { font-size:15px; color:rgba(255,255,255,0.5); line-height:1.7; }
 .feat-tag { display:inline-block; margin-top:20px; padding:5px 14px; border-radius:20px; font-size:12px; font-weight:500; background:rgba(108,59,245,0.15); color:var(--purple-light); border:1px solid rgba(108,59,245,0.25); }
-
 #dashboard { display:block; min-height:100vh; padding:100px 0 0; }
 .dash-layout { display:flex; height:calc(100vh - 100px); }
 .dash-sidebar { width:240px; background:rgba(0,0,0,0.4); border-right:1px solid rgba(255,255,255,0.05); backdrop-filter:blur(20px); padding:30px 0; flex-shrink:0; }
@@ -391,7 +292,6 @@ h1.hero-title { font-family:'Space Grotesk',sans-serif; font-size:clamp(50px,6vw
 .fab { position:fixed; bottom:36px; right:36px; width:60px; height:60px; border-radius:50%; background:linear-gradient(135deg,#6C3BF5,#00D4FF); border:none; cursor:pointer; font-size:26px; display:flex; align-items:center; justify-content:center; box-shadow:0 0 30px rgba(108,59,245,0.5); animation:fabPulse 2.5s ease-in-out infinite; z-index:999; transition:transform 0.2s; }
 .fab:hover{transform:scale(1.1)}
 @keyframes fabPulse{0%,100%{box-shadow:0 0 30px rgba(108,59,245,0.5)}50%{box-shadow:0 0 60px rgba(108,59,245,0.8),0 0 100px rgba(0,212,255,0.3)}}
-
 #chat { display:block; min-height:100vh; padding:100px 0 0; }
 .chat-layout { height:calc(100vh - 100px); display:flex; flex-direction:column; }
 .chat-topbar { display:flex; align-items:center; justify-content:space-between; padding:16px 32px; background:rgba(0,0,0,0.3); border-bottom:1px solid rgba(255,255,255,0.05); backdrop-filter:blur(20px); }
@@ -491,12 +391,8 @@ h1.hero-title { font-family:'Space Grotesk',sans-serif; font-size:clamp(50px,6vw
 
 <div id="jarvis-overlay">
   <div class="jarvis-ring-wrap">
-    <div class="jarvis-ring jr1"></div>
-    <div class="jarvis-ring jr2"></div>
-    <div class="jarvis-ring jr3"></div>
-    <div class="jarvis-ring jr4"></div>
-    <div class="jr-dot jr-dot-1"></div>
-    <div class="jr-dot jr-dot-2"></div>
+    <div class="jarvis-ring jr1"></div><div class="jarvis-ring jr2"></div><div class="jarvis-ring jr3"></div><div class="jarvis-ring jr4"></div>
+    <div class="jr-dot jr-dot-1"></div><div class="jr-dot jr-dot-2"></div>
     <div class="jarvis-core" id="jarvis-core-icon">🎙️</div>
   </div>
   <div class="jarvis-wave-bars" id="jarvis-bars">
@@ -611,9 +507,9 @@ h1.hero-title { font-family:'Space Grotesk',sans-serif; font-size:clamp(50px,6vw
       </div>
     </div>
     <div class="chat-input-area">
-      <button class="mic-btn" id="micBtn" title="Click to speak in Tamil / Hindi / English">🎙️</button>
+      <button class="mic-btn" id="micBtn" title="Click to speak in Tamil / Hindi / English (Jarvis Mode)">🎙️</button>
       <input class="chat-input-box" id="chat-input" type="text" placeholder="Type in Tamil / Hindi / Tanglish / Hinglish..." maxlength="300">
-      <button class="send-btn" onclick="sendChatMsg()" title="Send">➤</button>
+      <button class="send-btn" onclick="sendChatMsg(false)" title="Send">➤</button>
     </div>
   </div>
 </section>
@@ -731,7 +627,7 @@ function getLangCode(ld) {
 }
 
 // ============================================================
-// ================== 🔥 ULTRA ROBUST TTS =====================
+// ================== TTS FUNCTIONS ===========================
 // ============================================================
 async function speakText(text, langDisplay) {
     if (!text) return;
@@ -772,10 +668,8 @@ function fallbackToBrowserSpeech(text, langDisplay) {
         console.warn('No speech synthesis');
         return;
     }
-    // Cancel old
     window.speechSynthesis.cancel();
 
-    // Ensure voices are loaded
     let voices = window.speechSynthesis.getVoices();
     if (voices.length === 0) {
         window.speechSynthesis.onvoiceschanged = () => {
@@ -791,7 +685,6 @@ function speakWithVoice(text, langDisplay, voices) {
     const lmap = { 'ta': 'ta-IN', 'hi': 'hi-IN', 'en': 'en-US' };
     const targetLang = lmap[getLangCode(langDisplay)] || 'en-US';
     
-    // Try to find a native voice
     let nativeVoice = null;
     for (const v of voices) {
         if (v.lang.startsWith(targetLang.split('-')[0])) {
@@ -799,7 +692,6 @@ function speakWithVoice(text, langDisplay, voices) {
             break;
         }
     }
-    // Fallback to English if no native voice
     if (!nativeVoice && targetLang !== 'en-US') {
         for (const v of voices) {
             if (v.lang.startsWith('en')) {
@@ -822,7 +714,6 @@ function speakWithVoice(text, langDisplay, voices) {
 
     utterance.onerror = (e) => {
         console.warn('Speech error:', e.error);
-        // If still failing, just skip
     };
 
     console.log('🔊 Speaking via browser:', utterance.lang);
@@ -850,23 +741,19 @@ function cancelJarvis() {
   hideJarvis();
 }
 
-// ================== JARVIS GREET (FIXED) ==================
+// ================== JARVIS GREET ==================
 function jarvisGreet() {
   const greetings = [
     { lang:'தமிழ்', text:'Vanakkam! Naan Samvad AI. Enna help pannalaam?', code:'ta' },
     { lang:'हिन्दी', text:'Namaste! Main Samvad AI hoon. Kaise help karoon?', code:'hi' },
     { lang:'English', text:'Hello! I am Samvad AI. How can I help you today?', code:'en' }
   ];
-  // Select a random greeting
   const g = greetings[Math.floor(Math.random() * greetings.length)];
   
-  // Show overlay
   showJarvis('Hello! Pesungal...', g.lang + ' detected', true);
   
-  // Try to speak the greeting
   setTimeout(() => {
     speakText(g.text, g.lang);
-    // Update status after a moment to "Listening"
     setTimeout(() => {
       document.getElementById('jarvis-status').textContent = 'Listening...';
       document.getElementById('jarvis-sub').textContent = 'Speak now — ' + g.lang;
@@ -875,7 +762,7 @@ function jarvisGreet() {
   }, 500);
 }
 
-// ================== JARVIS MIC ==================
+// ================== JARVIS MIC (FULL VOICE) ==================
 document.getElementById('micBtn').addEventListener('click', function() {
   if(jarvisActive){ cancelJarvis(); return; }
   if(!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)){
@@ -889,71 +776,113 @@ document.getElementById('micBtn').addEventListener('click', function() {
   setTimeout(()=>{ jarvisGreet(); startJarvisRecognition(); }, 1000);
 });
 
+// ================== FULL VOICE RECOGNITION (Continuous Listening) ==================
 function startJarvisRecognition() {
-  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  const recognition = new SR();
-  jarvisRecognition = recognition;
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const recognition = new SR();
+    jarvisRecognition = recognition;
 
-  recognition.lang = 'en-US';
-  recognition.continuous = false;
-  recognition.interimResults = true;
-  recognition.maxAlternatives = 3;
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognition.maxAlternatives = 3;
+    recognition.lang = 'en-US';
 
-  let finalTranscript = '';
+    let finalTranscript = '';
+    let interimTranscript = '';
+    let silenceTimer = null;
+    let isFinalized = false;
 
-  recognition.onstart = () => {
-    document.getElementById('jarvis-status').textContent = 'Listening...';
-    document.getElementById('jarvis-sub').textContent = 'Speak in Tamil, Hindi, or English';
-    document.querySelectorAll('.jarvis-bar').forEach(b=>b.classList.remove('idle'));
-  };
+    recognition.onstart = () => {
+        document.getElementById('jarvis-status').textContent = 'Listening...';
+        document.getElementById('jarvis-sub').textContent = 'Speak freely — I am listening';
+        document.querySelectorAll('.jarvis-bar').forEach(b=>b.classList.remove('idle'));
+        finalTranscript = '';
+        interimTranscript = '';
+        isFinalized = false;
+    };
 
-  recognition.onresult = (event) => {
-    let interim = '';
-    for(let i=event.resultIndex; i<event.results.length; i++){
-      const t = event.results[i][0].transcript;
-      if(event.results[i].isFinal){ finalTranscript += t; }
-      else { interim += t; }
-    }
-    const display = finalTranscript || interim;
-    if(display){
-      const ld = detectLangDisplay(display);
-      document.getElementById('jarvis-status').textContent = display.length > 40 ? display.substring(0,40)+'...' : display;
-      document.getElementById('jarvis-sub').textContent = 'Language: ' + ld;
-    }
-  };
+    recognition.onresult = (event) => {
+        if (silenceTimer) {
+            clearTimeout(silenceTimer);
+            silenceTimer = null;
+        }
 
-  recognition.onend = () => {
-    if(!finalTranscript){ hideJarvis(); return; }
-    const ld = detectLangDisplay(finalTranscript);
-    document.getElementById('jarvis-status').textContent = 'Processing...';
-    document.getElementById('jarvis-sub').textContent = 'AI is thinking...';
-    document.querySelectorAll('.jarvis-bar').forEach(b=>b.classList.add('idle'));
-    document.getElementById('jarvis-core-icon').textContent = '🤖';
-    setTimeout(()=>{
-      document.getElementById('chat-input').value = finalTranscript;
-      hideJarvis();
-      sendChatMsg();
-    }, 500);
-  };
+        let interim = '';
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+            const t = event.results[i][0].transcript;
+            if (event.results[i].isFinal) {
+                finalTranscript += t;
+            } else {
+                interim += t;
+            }
+        }
+        interimTranscript = interim;
 
-  recognition.onerror = (event) => {
-    console.warn('Mic error:', event.error);
-    if(event.error==='no-speech'||event.error==='aborted'){
-      hideJarvis(); return;
-    }
-    if(event.error==='not-allowed'){
-      hideJarvis();
-      alert('Please allow microphone access in browser settings.');
-    } else {
-      hideJarvis();
-    }
-  };
+        const display = finalTranscript + interim;
+        if (display) {
+            const ld = detectLangDisplay(display);
+            document.getElementById('jarvis-status').textContent = display.length > 40 ? display.substring(0, 40) + '...' : display;
+            document.getElementById('jarvis-sub').textContent = 'Language: ' + ld + ' (still listening...)';
+        }
 
-  recognition.start();
+        silenceTimer = setTimeout(() => {
+            if (isFinalized) return;
+            isFinalized = true;
+            const fullText = finalTranscript + interimTranscript;
+            if (fullText.trim()) {
+                document.getElementById('jarvis-status').textContent = 'Processing...';
+                document.getElementById('jarvis-sub').textContent = 'AI is thinking...';
+                document.querySelectorAll('.jarvis-bar').forEach(b=>b.classList.add('idle'));
+                document.getElementById('jarvis-core-icon').textContent = '🤖';
+                setTimeout(() => {
+                    document.getElementById('chat-input').value = fullText.trim();
+                    hideJarvis();
+                    sendChatMsg(true);  // <-- VOICE MODE: TRUE = Speak the reply
+                }, 600);
+            }
+        }, 2000);
+    };
+
+    recognition.onend = () => {
+        if (!finalTranscript && !interimTranscript) {
+            hideJarvis();
+            return;
+        }
+        if (!isFinalized) {
+            const fullText = finalTranscript + interimTranscript;
+            if (fullText.trim()) {
+                document.getElementById('jarvis-status').textContent = 'Processing...';
+                document.getElementById('jarvis-sub').textContent = 'AI is thinking...';
+                document.querySelectorAll('.jarvis-bar').forEach(b=>b.classList.add('idle'));
+                document.getElementById('jarvis-core-icon').textContent = '🤖';
+                setTimeout(() => {
+                    document.getElementById('chat-input').value = fullText.trim();
+                    hideJarvis();
+                    sendChatMsg(true);  // <-- VOICE MODE: TRUE = Speak the reply
+                }, 600);
+            }
+        }
+    };
+
+    recognition.onerror = (event) => {
+        console.warn('Mic error:', event.error);
+        if (event.error === 'no-speech' || event.error === 'aborted') {
+            hideJarvis();
+            return;
+        }
+        if (event.error === 'not-allowed') {
+            hideJarvis();
+            alert('Please allow microphone access in browser settings.');
+        } else {
+            hideJarvis();
+        }
+    };
+
+    recognition.start();
 }
 
 // ================== SEND CHAT ==================
-async function sendChatMsg() {
+async function sendChatMsg(shouldSpeak = false) {
   if(isTyping) return;
   const inp = document.getElementById('chat-input');
   const txt = inp.value.trim();
@@ -1001,7 +930,12 @@ async function sendChatMsg() {
         }
       }
     }
-    await speakText(aiReply, ld);
+    
+    // 🔥 ONLY speak if shouldSpeak = TRUE (Mic Mode)
+    if (shouldSpeak) {
+        await speakText(aiReply, ld);
+    }
+    
   } catch(err) {
     console.error('Chat error:',err);
     document.getElementById(tid)?.remove();
@@ -1011,7 +945,8 @@ async function sendChatMsg() {
   isTyping = false;
 }
 
-document.getElementById('chat-input').addEventListener('keydown', e=>{ if(e.key==='Enter') sendChatMsg(); });
+// 🔥 Attach Enter key to send WITHOUT voice (text mode)
+document.getElementById('chat-input').addEventListener('keydown', e=>{ if(e.key==='Enter') sendChatMsg(false); });
 
 // ================== DASHBOARD ==================
 async function loadDashboardStats() {
@@ -1108,8 +1043,8 @@ def chat_stream():
     convos[cid]['messages'].append({'role':'user','content':msg,'language':lang})
 
     lang_instruction = {
-        "Tamil": "MANDATORY: Reply in Tamil/Tanglish. Mix Tamil words naturally. Style: 'Nalla question! FlowZint-la idhu romba useful-a irukkum.'",
-        "Hindi": "MANDATORY: Reply in Hindi/Hinglish. Mix Hindi words naturally. Style: 'Bahut acha question! FlowZint mein yeh feature bahut useful hai.'",
+        "Tamil": "MANDATORY: Reply in Tamil/Tanglish. Mix Tamil words naturally.",
+        "Hindi": "MANDATORY: Reply in Hindi/Hinglish. Mix Hindi words naturally.",
         "English": "Reply in clear, friendly English."
     }
 
@@ -1120,11 +1055,9 @@ def chat_stream():
         f"USER'S LANGUAGE: {lang}\n"
         f"{lang_instruction.get(lang, lang_instruction['English'])}\n\n"
         f"RULES:\n"
-        f"1. NEVER switch language - if user wrote Tamil, reply ONLY Tamil/Tanglish\n"
+        f"1. NEVER switch language\n"
         f"2. Keep replies SHORT: 2-3 sentences max\n"
-        f"3. Be warm and conversational, not robotic\n"
-        f"4. Tamil words: da/di, romba, konjam, nalla, seri, aama, aprom, eppadi, irukku\n"
-        f"5. Hindi words: yaar, bilkul, bahut, theek, sahi, acha, toh, abhi, phir"
+        f"3. Be warm and conversational, not robotic"
     )
 
     def generate():
@@ -1210,19 +1143,19 @@ def health():
         'groq':'Connected' if client else 'Missing GROQ_API_KEY',
         'gtts':'Installed' if GTTS_AVAILABLE else 'Run: pip install gTTS',
         'agora':'Configured' if (AGORA_APP_ID and AGORA_APP_ID!='demo') else 'Simulated mode',
-        'version':'12.0 Jarvis Edition - Ultra Robust TTS'
+        'version':'13.0 Jarvis Edition - Chat Text Only, Mic Voice'
     })
 
 if __name__ == '__main__':
     port = int(os.getenv("PORT",5000))
     print("\n" + "="*70)
-    print("  SAMVAD AI v12.0 - JARVIS EDITION (ROBUST TTS)")
+    print("  SAMVAD AI v13.0 - CHAT TEXT ONLY, MIC = VOICE")
     print("="*70)
     print(f"  Server   : http://localhost:{port}")
     print(f"  Groq AI  : {'READY' if client else 'Set GROQ_API_KEY'}")
     print(f"  gTTS     : {'INSTALLED' if GTTS_AVAILABLE else 'Run: pip install gTTS'}")
-    print(f"  Agora    : {'CONFIGURED' if (AGORA_APP_ID and AGORA_APP_ID!='demo') else 'Simulated'}")
     print("="*70)
-    print("  ✅ Fixed: gTTS fail → auto Browser Speech with native voice fallback.")
+    print("  ✅ CHAT: Type → Text only, NO voice")
+    print("  ✅ MIC:  Speak → AI replies with VOICE")
     print("="*70+"\n")
     app.run(debug=False, host='0.0.0.0', port=port)
