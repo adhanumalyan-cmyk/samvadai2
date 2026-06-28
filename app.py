@@ -39,6 +39,7 @@ convos = {}
 cnt = 0
 calls = {}
 
+# Language Detection (Same as before - keeping it short for space, but full logic is needed)
 TAMIL_SCRIPT = set('அஆஇஈஉஊஎஏஐஒஓஔகஙசஜஞடணதநபமயரலவழளறனஷஸஹ')
 HINDI_SCRIPT = set('अआइईउऊएऐओऔकखगघचछजझटठडढणतथदधनपफबभमयरलवशषसह')
 
@@ -169,7 +170,7 @@ def gen_agora_token(channel, uid=0, role=1, expire_seconds=3600):
         return {"token": f"TOKEN_{channel}_{int(time.time())}", "app_id": AGORA_APP_ID, "channel": channel, "uid": uid, "simulated": True}
 
 # ============================================================
-# UI HTML – ULTIMATE FIXED VERSION
+# UI HTML – CONTINUOUS CONVERSATION MODE
 # ============================================================
 UI_HTML = r"""
 <!DOCTYPE html>
@@ -363,8 +364,10 @@ h1.hero-title { font-family:'Space Grotesk',sans-serif; font-size:clamp(50px,6vw
 .jarvis-bar.idle { animation:none; transform:scaleY(0.25); opacity:0.3; }
 .jarvis-status-text { font-family:'Space Grotesk',sans-serif; font-size:22px; font-weight:600; background:linear-gradient(135deg,#a78bfa,#00D4FF); -webkit-background-clip:text; -webkit-text-fill-color:transparent; letter-spacing:0.5px; text-align:center; }
 .jarvis-sub-text { font-size:14px; color:rgba(255,255,255,0.4); text-align:center; margin-top:-20px; }
-.jarvis-close-btn { margin-top:8px; padding:10px 28px; border-radius:24px; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); color:rgba(255,255,255,0.55); font-size:14px; cursor:pointer; font-family:'Inter',sans-serif; transition:all 0.2s; }
+.jarvis-close-btn { padding:10px 28px; border-radius:24px; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); color:rgba(255,255,255,0.55); font-size:14px; cursor:pointer; font-family:'Inter',sans-serif; transition:all 0.2s; }
 .jarvis-close-btn:hover { background:rgba(255,255,255,0.1); color:#fff; }
+#jarvis-send-btn { background:linear-gradient(135deg,#6C3BF5,#00D4FF) !important; color:#fff !important; border:none !important; display:none; }
+#jarvis-send-btn:hover { transform:scale(1.05); }
 .jr-dot { position:absolute; width:8px; height:8px; border-radius:50%; top:50%; left:50%; transform-origin:0 0; }
 .jr-dot-1 { background:#6C3BF5; animation:jarvisDotOrbit1 1.4s linear infinite; }
 .jr-dot-2 { background:#00D4FF; animation:jarvisDotOrbit2 2s linear infinite; }
@@ -410,8 +413,8 @@ h1.hero-title { font-family:'Space Grotesk',sans-serif; font-size:clamp(50px,6vw
   <div class="jarvis-status-text" id="jarvis-status">Initializing...</div>
   <div class="jarvis-sub-text" id="jarvis-sub">Tamil · Hindi · English supported</div>
   <div style="display:flex; gap:12px; margin-top:8px;">
-    <button class="jarvis-close-btn" id="jarvis-send-btn" style="background:linear-gradient(135deg,#6C3BF5,#00D4FF); color:#fff; border:none; display:none;">📤 Send</button>
-    <button class="jarvis-close-btn" onclick="cancelJarvis()">✕ Cancel</button>
+    <button class="jarvis-close-btn" id="jarvis-send-btn">📤 Send</button>
+    <button class="jarvis-close-btn" onclick="cancelJarvis()">✕ End Conversation</button>
   </div>
 </div>
 
@@ -518,7 +521,7 @@ h1.hero-title { font-family:'Space Grotesk',sans-serif; font-size:clamp(50px,6vw
       </div>
     </div>
     <div class="chat-input-area">
-      <button class="mic-btn" id="micBtn" title="Click to speak (Jarvis Voice Mode)">🎙️</button>
+      <button class="mic-btn" id="micBtn" title="Click once to start Voice Conversation (Continuous)">🎙️</button>
       <input class="chat-input-box" id="chat-input" type="text" placeholder="Type in Tamil / Hindi / Tanglish / Hinglish..." maxlength="300">
       <button class="send-btn" onclick="sendChatMsg(false)" title="Send (Text Only)">➤</button>
     </div>
@@ -590,6 +593,8 @@ let isTyping = false;
 window.convId = null;
 let jarvisRecognition = null;
 let jarvisActive = false;
+let isProcessing = false; // To prevent overlapping requests
+let currentTranscript = '';
 
 function showSection(id) {
   document.querySelectorAll('section').forEach(s=>s.style.display='none');
@@ -637,12 +642,10 @@ function getLangCode(ld) {
   return 'en';
 }
 
-// ============================================================
 // ================== TTS FUNCTIONS ===========================
-// ============================================================
-async function speakText(text, langDisplay) {
-    if (!text) return;
-    console.log('🔊 TTS Request:', text.substring(0, 30), 'Lang:', langDisplay);
+async function speakText(text, langDisplay, callback) {
+    if (!text) { if(callback) callback(); return; }
+    console.log('🔊 TTS:', text.substring(0, 30), 'Lang:', langDisplay);
     const langCode = getLangCode(langDisplay);
     let ttsFailed = false;
 
@@ -655,106 +658,216 @@ async function speakText(text, langDisplay) {
         const data = await res.json();
         if (data.audio) {
             const audio = new Audio('data:audio/mp3;base64,' + data.audio);
-            audio.onerror = () => { console.log('Audio error, fallback'); fallbackToBrowserSpeech(text, langDisplay); };
-            audio.play().catch(() => {
-                console.log('⚠️ Audio play blocked, fallback');
-                fallbackToBrowserSpeech(text, langDisplay);
-            });
+            audio.onended = () => { if(callback) callback(); };
+            audio.onerror = () => { fallbackToBrowserSpeech(text, langDisplay, callback); };
+            audio.play().catch(() => { fallbackToBrowserSpeech(text, langDisplay, callback); });
             return;
-        } else {
-            ttsFailed = true;
-        }
-    } catch (e) {
-        console.log('⚠️ gTTS API error:', e);
-        ttsFailed = true;
-    }
+        } else { ttsFailed = true; }
+    } catch (e) { console.log('TTS API Error:', e); ttsFailed = true; }
 
-    if (ttsFailed) {
-        fallbackToBrowserSpeech(text, langDisplay);
-    }
+    if (ttsFailed) { fallbackToBrowserSpeech(text, langDisplay, callback); }
 }
 
-function fallbackToBrowserSpeech(text, langDisplay) {
-    if (!window.speechSynthesis) {
-        console.warn('No speech synthesis');
-        return;
-    }
+function fallbackToBrowserSpeech(text, langDisplay, callback) {
+    if (!window.speechSynthesis) { if(callback) callback(); return; }
     window.speechSynthesis.cancel();
-
     let voices = window.speechSynthesis.getVoices();
     if (voices.length === 0) {
-        window.speechSynthesis.onvoiceschanged = () => {
-            voices = window.speechSynthesis.getVoices();
-            speakWithVoice(text, langDisplay, voices);
+        window.speechSynthesis.onvoiceschanged = () => { 
+            voices = window.speechSynthesis.getVoices(); 
+            speakWithVoice(text, langDisplay, voices, callback);
         };
-    } else {
-        speakWithVoice(text, langDisplay, voices);
-    }
+    } else { speakWithVoice(text, langDisplay, voices, callback); }
 }
 
-function speakWithVoice(text, langDisplay, voices) {
+function speakWithVoice(text, langDisplay, voices, callback) {
     const lmap = { 'ta': 'ta-IN', 'hi': 'hi-IN', 'en': 'en-US' };
     const targetLang = lmap[getLangCode(langDisplay)] || 'en-US';
-    
     let nativeVoice = null;
-    for (const v of voices) {
-        if (v.lang.startsWith(targetLang.split('-')[0])) {
-            nativeVoice = v;
-            break;
-        }
-    }
-    if (!nativeVoice && targetLang !== 'en-US') {
-        for (const v of voices) {
-            if (v.lang.startsWith('en')) {
-                nativeVoice = v;
-                break;
-            }
-        }
-    }
+    for (const v of voices) { if (v.lang.startsWith(targetLang.split('-')[0])) { nativeVoice = v; break; } }
+    if (!nativeVoice && targetLang !== 'en-US') { for (const v of voices) { if (v.lang.startsWith('en')) { nativeVoice = v; break; } } }
 
     const utterance = new SpeechSynthesisUtterance(text);
-    if (nativeVoice) {
-        utterance.voice = nativeVoice;
-        utterance.lang = nativeVoice.lang;
-    } else {
-        utterance.lang = 'en-US';
-    }
+    if (nativeVoice) { utterance.voice = nativeVoice; utterance.lang = nativeVoice.lang; } 
+    else { utterance.lang = 'en-US'; }
     utterance.rate = 0.9;
     utterance.pitch = 1;
-    utterance.volume = 1;
-
-    utterance.onerror = (e) => {
-        console.warn('Speech error:', e.error);
-    };
-
+    utterance.onend = () => { if(callback) callback(); };
+    utterance.onerror = () => { if(callback) callback(); };
     console.log('🔊 Speaking via browser:', utterance.lang);
     window.speechSynthesis.speak(utterance);
 }
 
 // ================== JARVIS HELPERS ==================
-function showJarvis(statusText, subText, listening) {
+function showJarvis(status, sub, listening) {
   document.getElementById('jarvis-overlay').classList.add('active');
-  document.getElementById('jarvis-status').textContent = statusText;
-  document.getElementById('jarvis-sub').textContent = subText || 'Tamil · Hindi · English supported';
+  document.getElementById('jarvis-status').textContent = status;
+  document.getElementById('jarvis-sub').textContent = sub || 'Tamil · Hindi · English supported';
   document.getElementById('jarvis-core-icon').textContent = listening ? '🎙️' : '🤖';
-  const bars = document.querySelectorAll('.jarvis-bar');
-  bars.forEach(b => { b.classList.toggle('idle', !listening); });
-  document.getElementById('jarvis-send-btn').style.display = 'none';
+  document.querySelectorAll('.jarvis-bar').forEach(b => b.classList.toggle('idle', !listening));
 }
 
 function hideJarvis() {
   document.getElementById('jarvis-overlay').classList.remove('active');
   document.getElementById('micBtn').classList.remove('jarvis-active');
   jarvisActive = false;
+  if(jarvisRecognition) { try{ jarvisRecognition.stop(); } catch(e){} }
 }
 
 function cancelJarvis() {
-  if(jarvisRecognition){ try{jarvisRecognition.abort();}catch(e){} jarvisRecognition=null; }
+  isProcessing = false;
+  currentTranscript = '';
+  if(jarvisRecognition) { try{ jarvisRecognition.stop(); } catch(e){} }
   hideJarvis();
 }
 
-// ================== JARVIS GREET ==================
-function jarvisGreet() {
+// ================== CONTINUOUS CONVERSATION LOGIC ==================
+
+// Function to restart listening
+function startListening() {
+    if (!jarvisActive) return;
+    if (isProcessing) {
+        console.log('Waiting for processing to finish...');
+        return;
+    }
+    // If recognition already exists, stop and restart
+    if (jarvisRecognition) {
+        try { jarvisRecognition.stop(); } catch(e) {}
+        jarvisRecognition = null;
+    }
+    
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) { alert('Speech recognition not supported.'); return; }
+    
+    const recognition = new SR();
+    jarvisRecognition = recognition;
+    recognition.lang = 'en-US';
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognition.maxAlternatives = 1;
+
+    let finalText = '';
+    let interimText = '';
+    let silenceTimer = null;
+
+    recognition.onstart = () => {
+        console.log('🎧 Listening...');
+        showJarvis('Listening...', 'Speak now...', true);
+        finalText = '';
+        interimText = '';
+        document.getElementById('jarvis-send-btn').style.display = 'inline-block';
+        document.getElementById('jarvis-send-btn').onclick = function() {
+            if (silenceTimer) clearTimeout(silenceTimer);
+            if (finalText.trim() || interimText.trim()) {
+                processVoiceInput(finalText + interimText);
+            }
+        };
+    };
+
+    recognition.onresult = (event) => {
+        if (silenceTimer) clearTimeout(silenceTimer);
+        let interim = '';
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+            if (event.results[i].isFinal) { finalText += event.results[i][0].transcript; } 
+            else { interim += event.results[i][0].transcript; }
+        }
+        interimText = interim;
+        const display = finalText + interim;
+        if (display) {
+            const lang = detectLangDisplay(display);
+            document.getElementById('jarvis-status').textContent = display.length > 40 ? display.substring(0,40)+'...' : display;
+            document.getElementById('jarvis-sub').textContent = 'Language: ' + lang + ' (click Send or wait)';
+        }
+        // Auto-send after 3 seconds of silence
+        silenceTimer = setTimeout(() => {
+            if (finalText.trim() || interimText.trim()) {
+                processVoiceInput(finalText + interimText);
+            }
+        }, 3000);
+    };
+
+    recognition.onerror = (event) => {
+        console.warn('Mic Error:', event.error);
+        if (event.error === 'no-speech' || event.error === 'aborted') {
+            // Silently ignore, maybe restart if still active
+        } else if (event.error === 'not-allowed') {
+            alert('Please allow microphone access.');
+            cancelJarvis();
+        } else {
+            // Try to restart
+            if (jarvisActive && !isProcessing) {
+                setTimeout(() => startListening(), 500);
+            }
+        }
+    };
+
+    recognition.onend = () => {
+        console.log('🔇 Recognition ended.');
+        // If still active and not processing, restart automatically
+        if (jarvisActive && !isProcessing) {
+            // Check if we have pending text
+            if (finalText.trim() || interimText.trim()) {
+                processVoiceInput(finalText + interimText);
+            } else {
+                // Restart listening
+                setTimeout(() => startListening(), 300);
+            }
+        }
+    };
+
+    recognition.start();
+}
+
+// Process voice input -> Send to AI -> Speak reply -> Continue loop
+function processVoiceInput(text) {
+    if (!text.trim()) return;
+    if (isProcessing) return;
+    isProcessing = true;
+    
+    // Stop recognition temporarily
+    if (jarvisRecognition) {
+        try { jarvisRecognition.stop(); } catch(e) {}
+    }
+    
+    // Clear the overlay status
+    showJarvis('Processing...', 'AI is thinking...', false);
+    document.getElementById('jarvis-send-btn').style.display = 'none';
+    
+    // Set the text in the chat input and send
+    document.getElementById('chat-input').value = text.trim();
+    
+    // Call sendChatMsg with speak mode enabled
+    sendChatMsg(true).then(() => {
+        // Wait a bit and then restart listening
+        isProcessing = false;
+        if (jarvisActive) {
+            setTimeout(() => startListening(), 1500);
+        }
+    }).catch(() => {
+        isProcessing = false;
+        if (jarvisActive) {
+            setTimeout(() => startListening(), 1500);
+        }
+    });
+}
+
+// ================== JARVIS MIC START ==================
+document.getElementById('micBtn').addEventListener('click', function() {
+  if(jarvisActive){ cancelJarvis(); return; }
+  
+  if(!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)){
+    alert('Voice input requires Chrome browser.');
+    return;
+  }
+
+  jarvisActive = true;
+  isProcessing = false;
+  this.classList.add('jarvis-active');
+  
+  // Show overlay with greeting
+  showJarvis('Initializing Samvad AI...', 'Starting up...', false);
+  
+  // Greet and then start listening
   const greetings = [
     { lang:'தமிழ்', text:'Vanakkam! Naan Samvad AI. Enna help pannalaam?', code:'ta' },
     { lang:'हिन्दी', text:'Namaste! Main Samvad AI hoon. Kaise help karoon?', code:'hi' },
@@ -764,134 +877,13 @@ function jarvisGreet() {
   
   showJarvis('Hello! Pesungal...', g.lang + ' detected', true);
   
-  setTimeout(() => {
-    speakText(g.text, g.lang);
-    setTimeout(() => {
-      document.getElementById('jarvis-status').textContent = 'Listening...';
-      document.getElementById('jarvis-sub').textContent = 'Speak now — ' + g.lang;
-      document.getElementById('jarvis-core-icon').textContent = '🎙️';
-      document.getElementById('jarvis-send-btn').style.display = 'inline-block';
-    }, 400);
-  }, 500);
-}
-
-// ================== JARVIS MIC (FULL VOICE) ==================
-document.getElementById('micBtn').addEventListener('click', function() {
-  if(jarvisActive){ cancelJarvis(); return; }
-  if(!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)){
-    alert('Voice input requires Chrome browser.');
-    return;
-  }
-
-  jarvisActive = true;
-  this.classList.add('jarvis-active');
-  showJarvis('Initializing Samvad AI...', 'Starting up...', false);
-  setTimeout(()=>{ jarvisGreet(); startJarvisRecognition(); }, 1000);
+  speakText(g.text, g.lang, () => {
+      // After greeting, start listening
+      if (jarvisActive) {
+          startListening();
+      }
+  });
 });
-
-function startJarvisRecognition() {
-    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-    const recognition = new SR();
-    jarvisRecognition = recognition;
-
-    recognition.continuous = true;
-    recognition.interimResults = true;
-    recognition.maxAlternatives = 3;
-    recognition.lang = 'en-US';
-
-    let finalTranscript = '';
-    let interimTranscript = '';
-    let silenceTimer = null;
-    let isFinalized = false;
-
-    recognition.onstart = () => {
-        document.getElementById('jarvis-status').textContent = 'Listening...';
-        document.getElementById('jarvis-sub').textContent = 'Speak freely — click "Send" when done';
-        document.querySelectorAll('.jarvis-bar').forEach(b=>b.classList.remove('idle'));
-        finalTranscript = '';
-        interimTranscript = '';
-        isFinalized = false;
-        document.getElementById('jarvis-send-btn').style.display = 'inline-block';
-        document.getElementById('jarvis-send-btn').onclick = function() {
-            if (isFinalized) return;
-            isFinalized = true;
-            const fullText = finalTranscript + interimTranscript;
-            if (fullText.trim()) {
-                document.getElementById('jarvis-status').textContent = 'Processing...';
-                document.getElementById('jarvis-sub').textContent = 'AI is thinking...';
-                document.querySelectorAll('.jarvis-bar').forEach(b=>b.classList.add('idle'));
-                document.getElementById('jarvis-core-icon').textContent = '🤖';
-                setTimeout(() => {
-                    document.getElementById('chat-input').value = fullText.trim();
-                    hideJarvis();
-                    sendChatMsg(true); // 🔥 VOICE MODE
-                }, 600);
-            }
-        };
-    };
-
-    recognition.onresult = (event) => {
-        if (silenceTimer) {
-            clearTimeout(silenceTimer);
-            silenceTimer = null;
-        }
-
-        let interim = '';
-        for (let i = event.resultIndex; i < event.results.length; i++) {
-            const t = event.results[i][0].transcript;
-            if (event.results[i].isFinal) {
-                finalTranscript += t;
-            } else {
-                interim += t;
-            }
-        }
-        interimTranscript = interim;
-
-        const display = finalTranscript + interim;
-        if (display) {
-            const ld = detectLangDisplay(display);
-            document.getElementById('jarvis-status').textContent = display.length > 40 ? display.substring(0, 40) + '...' : display;
-            document.getElementById('jarvis-sub').textContent = 'Language: ' + ld + ' (click Send)';
-        }
-    };
-
-    recognition.onend = () => {
-        if (!finalTranscript && !interimTranscript) {
-            hideJarvis();
-            return;
-        }
-        if (!isFinalized) {
-            const fullText = finalTranscript + interimTranscript;
-            if (fullText.trim()) {
-                document.getElementById('jarvis-status').textContent = 'Processing...';
-                document.getElementById('jarvis-sub').textContent = 'AI is thinking...';
-                document.querySelectorAll('.jarvis-bar').forEach(b=>b.classList.add('idle'));
-                document.getElementById('jarvis-core-icon').textContent = '🤖';
-                setTimeout(() => {
-                    document.getElementById('chat-input').value = fullText.trim();
-                    hideJarvis();
-                    sendChatMsg(true); // 🔥 VOICE MODE
-                }, 600);
-            }
-        }
-    };
-
-    recognition.onerror = (event) => {
-        console.warn('Mic error:', event.error);
-        if (event.error === 'no-speech' || event.error === 'aborted') {
-            hideJarvis();
-            return;
-        }
-        if (event.error === 'not-allowed') {
-            hideJarvis();
-            alert('Please allow microphone access in browser settings.');
-        } else {
-            hideJarvis();
-        }
-    };
-
-    recognition.start();
-}
 
 // ================== SEND CHAT ==================
 async function sendChatMsg(shouldSpeak = false) {
@@ -943,29 +935,32 @@ async function sendChatMsg(shouldSpeak = false) {
       }
     }
     
-    // 🔥 CRITICAL: Speak ONLY if shouldSpeak is explicitly TRUE
+    // Speak only if shouldSpeak is true
     if (shouldSpeak === true) {
-        console.log('🔊 Voice mode ON - speaking reply');
-        await speakText(aiReply, ld);
-    } else {
-        console.log('📝 Text mode - NO voice output');
+        console.log('🔊 Speaking Reply...');
+        await new Promise((resolve) => {
+            speakText(aiReply, ld, resolve);
+        });
     }
+    
+    return aiReply; // Return for the voice loop
     
   } catch(err) {
     console.error('Chat error:',err);
     document.getElementById(tid)?.remove();
     msgs.innerHTML += `<div class="msg ai"><div class="msg-avatar">🤖</div><div><div class="msg-bubble">⚠️ Server error — please try again! 🔄</div></div></div>`;
+    throw err;
+  } finally {
+    msgs.scrollTop = msgs.scrollHeight;
+    isTyping = false;
   }
-  msgs.scrollTop = msgs.scrollHeight;
-  isTyping = false;
 }
 
-// ================== ENTER KEY & SEND BUTTON ==================
-// Enter key -> Text mode ONLY
+// ================== ENTER KEY (Text Only) ==================
 document.getElementById('chat-input').addEventListener('keydown', function(e) { 
     if(e.key === 'Enter') { 
         e.preventDefault(); 
-        sendChatMsg(false); // 🔥 FALSE = NO VOICE
+        sendChatMsg(false); 
     } 
 });
 
@@ -1164,20 +1159,21 @@ def health():
         'groq':'Connected' if client else 'Missing GROQ_API_KEY',
         'gtts':'Installed' if GTTS_AVAILABLE else 'Run: pip install gTTS',
         'agora':'Configured' if (AGORA_APP_ID and AGORA_APP_ID!='demo') else 'Simulated mode',
-        'version':'14.0 Jarvis Edition - ULTIMATE FIX'
+        'version':'15.0 - CONTINUOUS CONVERSATION'
     })
 
 if __name__ == '__main__':
     port = int(os.getenv("PORT",5000))
     print("\n" + "="*70)
-    print("  SAMVAD AI v14.0 - ULTIMATE FIX (CHAT TEXT, MIC VOICE)")
+    print("  SAMVAD AI v15.0 - CONTINUOUS CONVERSATION")
     print("="*70)
     print(f"  Server   : http://localhost:{port}")
     print(f"  Groq AI  : {'READY' if client else 'Set GROQ_API_KEY'}")
     print(f"  gTTS     : {'INSTALLED' if GTTS_AVAILABLE else 'Run: pip install gTTS'}")
     print("="*70)
     print("  ✅ CHAT (Type + Enter)  -> Text only, NO voice")
-    print("  ✅ MIC (Click + Speak)  -> Full Voice Conversation")
-    print("  ✅ 'Send' button in Overlay to control when to send")
+    print("  ✅ MIC (Click once)     -> Continuous Voice Conversation")
+    print("  ✅ AI listens -> Speaks -> Listens again (Auto-loop)")
+    print("  ✅ Click 'End Conversation' to stop")
     print("="*70+"\n")
     app.run(debug=False, host='0.0.0.0', port=port)
