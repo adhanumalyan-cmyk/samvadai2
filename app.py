@@ -31,7 +31,6 @@ CORS(app)
 GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
 AGORA_APP_ID = os.getenv("AGORA_APP_ID", "demo")
 AGORA_CERT = os.getenv("AGORA_CERTIFICATE", "")
-ELEVENLABS_API_KEY = os.getenv("ELEVENLABS_API_KEY", "")
 
 client = Groq(api_key=GROQ_API_KEY) if GROQ_API_KEY and GROQ_API_KEY.startswith('gsk_') else None
 MODEL = "llama-3.3-70b-versatile"
@@ -130,7 +129,12 @@ def gen_agora_token(channel, uid=0, role=1, expire_seconds=3600):
         PRIVILEGE_PUBLISH_AUDIO_STREAM = 2
         PRIVILEGE_PUBLISH_VIDEO_STREAM = 3
         PRIVILEGE_PUBLISH_DATA_STREAM = 4
-        privileges = {PRIVILEGE_JOIN_CHANNEL: privilege_expired_ts, PRIVILEGE_PUBLISH_AUDIO_STREAM: privilege_expired_ts, PRIVILEGE_PUBLISH_VIDEO_STREAM: privilege_expired_ts, PRIVILEGE_PUBLISH_DATA_STREAM: privilege_expired_ts}
+        privileges = {
+            PRIVILEGE_JOIN_CHANNEL: privilege_expired_ts,
+            PRIVILEGE_PUBLISH_AUDIO_STREAM: privilege_expired_ts,
+            PRIVILEGE_PUBLISH_VIDEO_STREAM: privilege_expired_ts,
+            PRIVILEGE_PUBLISH_DATA_STREAM: privilege_expired_ts
+        }
         nonce = uuid.uuid4().hex
         ts = int(time.time())
         import struct
@@ -151,8 +155,12 @@ def gen_agora_token(channel, uid=0, role=1, expire_seconds=3600):
         signing_key = hmac.new(signing_key, str(uid).encode('utf-8'), hashlib.sha256).digest()
         signing_key = hmac.new(signing_key, channel.encode('utf-8'), hashlib.sha256).digest()
         signature = hmac.new(signing_key, msg, hashlib.sha256).digest()
-        content = pack_string(AGORA_APP_ID) + pack_string(channel) + pack_string(str(uid)) + pack_string(nonce) + pack_uint32(ts) + pack_uint16(len(privileges))
-        for k, v in sorted(privileges.items()): content += pack_uint16(k) + pack_uint32(v)
+        content = (
+            pack_string(AGORA_APP_ID) + pack_string(channel) + pack_string(str(uid)) +
+            pack_string(nonce) + pack_uint32(ts) + pack_uint16(len(privileges))
+        )
+        for k, v in sorted(privileges.items()):
+            content += pack_uint16(k) + pack_uint32(v)
         content += pack_uint16(len(signature)) + signature
         token = VERSION + base64.b64encode(content).decode('utf-8')
         return {"token": token, "app_id": AGORA_APP_ID, "channel": channel, "uid": uid, "simulated": False, "expires_at": privilege_expired_ts}
@@ -161,7 +169,7 @@ def gen_agora_token(channel, uid=0, role=1, expire_seconds=3600):
         return {"token": f"TOKEN_{channel}_{int(time.time())}", "app_id": AGORA_APP_ID, "channel": channel, "uid": uid, "simulated": True}
 
 # ============================================================
-# UI HTML – CHAT TEXT ONLY, MIC = VOICE CONVERSATION
+# UI HTML – ULTIMATE FIXED VERSION
 # ============================================================
 UI_HTML = r"""
 <!DOCTYPE html>
@@ -329,7 +337,7 @@ h1.hero-title { font-family:'Space Grotesk',sans-serif; font-size:clamp(50px,6vw
 .mic-btn.jarvis-active { background:rgba(108,59,245,0.3); border-color:rgba(108,59,245,0.8); box-shadow:0 0 0 0 rgba(108,59,245,0.6); animation:jarvisMicPulse 0.8s ease-in-out infinite; }
 @keyframes jarvisMicPulse { 0%{box-shadow:0 0 0 0 rgba(108,59,245,0.7),0 0 0 0 rgba(0,212,255,0.4)} 70%{box-shadow:0 0 0 14px rgba(108,59,245,0),0 0 0 26px rgba(0,212,255,0)} 100%{box-shadow:0 0 0 0 rgba(108,59,245,0),0 0 0 0 rgba(0,212,255,0)} }
 
-#jarvis-overlay { display:none; position:fixed; inset:0; z-index:9999; background:rgba(8,7,20,0.92); backdrop-filter:blur(12px); flex-direction:column; align-items:center; justify-content:center; gap:32px; }
+#jarvis-overlay { display:none; position:fixed; inset:0; z-index:9999; background:rgba(8,7,20,0.92); backdrop-filter:blur(12px); flex-direction:column; align-items:center; justify-content:center; gap:20px; }
 #jarvis-overlay.active { display:flex; }
 .jarvis-ring-wrap { position:relative; width:280px; height:280px; display:flex; align-items:center; justify-content:center; }
 .jarvis-ring { position:absolute; border-radius:50%; border-style:solid; border-color:transparent; animation-timing-function:linear; animation-iteration-count:infinite; }
@@ -401,7 +409,10 @@ h1.hero-title { font-family:'Space Grotesk',sans-serif; font-size:clamp(50px,6vw
   </div>
   <div class="jarvis-status-text" id="jarvis-status">Initializing...</div>
   <div class="jarvis-sub-text" id="jarvis-sub">Tamil · Hindi · English supported</div>
-  <button class="jarvis-close-btn" onclick="cancelJarvis()">✕ Cancel</button>
+  <div style="display:flex; gap:12px; margin-top:8px;">
+    <button class="jarvis-close-btn" id="jarvis-send-btn" style="background:linear-gradient(135deg,#6C3BF5,#00D4FF); color:#fff; border:none; display:none;">📤 Send</button>
+    <button class="jarvis-close-btn" onclick="cancelJarvis()">✕ Cancel</button>
+  </div>
 </div>
 
 <nav>
@@ -507,9 +518,9 @@ h1.hero-title { font-family:'Space Grotesk',sans-serif; font-size:clamp(50px,6vw
       </div>
     </div>
     <div class="chat-input-area">
-      <button class="mic-btn" id="micBtn" title="Click to speak in Tamil / Hindi / English (Jarvis Mode)">🎙️</button>
+      <button class="mic-btn" id="micBtn" title="Click to speak (Jarvis Voice Mode)">🎙️</button>
       <input class="chat-input-box" id="chat-input" type="text" placeholder="Type in Tamil / Hindi / Tanglish / Hinglish..." maxlength="300">
-      <button class="send-btn" onclick="sendChatMsg(false)" title="Send">➤</button>
+      <button class="send-btn" onclick="sendChatMsg(false)" title="Send (Text Only)">➤</button>
     </div>
   </div>
 </section>
@@ -728,6 +739,7 @@ function showJarvis(statusText, subText, listening) {
   document.getElementById('jarvis-core-icon').textContent = listening ? '🎙️' : '🤖';
   const bars = document.querySelectorAll('.jarvis-bar');
   bars.forEach(b => { b.classList.toggle('idle', !listening); });
+  document.getElementById('jarvis-send-btn').style.display = 'none';
 }
 
 function hideJarvis() {
@@ -758,6 +770,7 @@ function jarvisGreet() {
       document.getElementById('jarvis-status').textContent = 'Listening...';
       document.getElementById('jarvis-sub').textContent = 'Speak now — ' + g.lang;
       document.getElementById('jarvis-core-icon').textContent = '🎙️';
+      document.getElementById('jarvis-send-btn').style.display = 'inline-block';
     }, 400);
   }, 500);
 }
@@ -776,7 +789,6 @@ document.getElementById('micBtn').addEventListener('click', function() {
   setTimeout(()=>{ jarvisGreet(); startJarvisRecognition(); }, 1000);
 });
 
-// ================== FULL VOICE RECOGNITION (Continuous Listening) ==================
 function startJarvisRecognition() {
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
     const recognition = new SR();
@@ -794,11 +806,28 @@ function startJarvisRecognition() {
 
     recognition.onstart = () => {
         document.getElementById('jarvis-status').textContent = 'Listening...';
-        document.getElementById('jarvis-sub').textContent = 'Speak freely — I am listening';
+        document.getElementById('jarvis-sub').textContent = 'Speak freely — click "Send" when done';
         document.querySelectorAll('.jarvis-bar').forEach(b=>b.classList.remove('idle'));
         finalTranscript = '';
         interimTranscript = '';
         isFinalized = false;
+        document.getElementById('jarvis-send-btn').style.display = 'inline-block';
+        document.getElementById('jarvis-send-btn').onclick = function() {
+            if (isFinalized) return;
+            isFinalized = true;
+            const fullText = finalTranscript + interimTranscript;
+            if (fullText.trim()) {
+                document.getElementById('jarvis-status').textContent = 'Processing...';
+                document.getElementById('jarvis-sub').textContent = 'AI is thinking...';
+                document.querySelectorAll('.jarvis-bar').forEach(b=>b.classList.add('idle'));
+                document.getElementById('jarvis-core-icon').textContent = '🤖';
+                setTimeout(() => {
+                    document.getElementById('chat-input').value = fullText.trim();
+                    hideJarvis();
+                    sendChatMsg(true); // 🔥 VOICE MODE
+                }, 600);
+            }
+        };
     };
 
     recognition.onresult = (event) => {
@@ -822,25 +851,8 @@ function startJarvisRecognition() {
         if (display) {
             const ld = detectLangDisplay(display);
             document.getElementById('jarvis-status').textContent = display.length > 40 ? display.substring(0, 40) + '...' : display;
-            document.getElementById('jarvis-sub').textContent = 'Language: ' + ld + ' (still listening...)';
+            document.getElementById('jarvis-sub').textContent = 'Language: ' + ld + ' (click Send)';
         }
-
-        silenceTimer = setTimeout(() => {
-            if (isFinalized) return;
-            isFinalized = true;
-            const fullText = finalTranscript + interimTranscript;
-            if (fullText.trim()) {
-                document.getElementById('jarvis-status').textContent = 'Processing...';
-                document.getElementById('jarvis-sub').textContent = 'AI is thinking...';
-                document.querySelectorAll('.jarvis-bar').forEach(b=>b.classList.add('idle'));
-                document.getElementById('jarvis-core-icon').textContent = '🤖';
-                setTimeout(() => {
-                    document.getElementById('chat-input').value = fullText.trim();
-                    hideJarvis();
-                    sendChatMsg(true);  // <-- VOICE MODE: TRUE = Speak the reply
-                }, 600);
-            }
-        }, 2000);
     };
 
     recognition.onend = () => {
@@ -858,7 +870,7 @@ function startJarvisRecognition() {
                 setTimeout(() => {
                     document.getElementById('chat-input').value = fullText.trim();
                     hideJarvis();
-                    sendChatMsg(true);  // <-- VOICE MODE: TRUE = Speak the reply
+                    sendChatMsg(true); // 🔥 VOICE MODE
                 }, 600);
             }
         }
@@ -931,9 +943,12 @@ async function sendChatMsg(shouldSpeak = false) {
       }
     }
     
-    // 🔥 ONLY speak if shouldSpeak = TRUE (Mic Mode)
-    if (shouldSpeak) {
+    // 🔥 CRITICAL: Speak ONLY if shouldSpeak is explicitly TRUE
+    if (shouldSpeak === true) {
+        console.log('🔊 Voice mode ON - speaking reply');
         await speakText(aiReply, ld);
+    } else {
+        console.log('📝 Text mode - NO voice output');
     }
     
   } catch(err) {
@@ -945,8 +960,14 @@ async function sendChatMsg(shouldSpeak = false) {
   isTyping = false;
 }
 
-// 🔥 Attach Enter key to send WITHOUT voice (text mode)
-document.getElementById('chat-input').addEventListener('keydown', e=>{ if(e.key==='Enter') sendChatMsg(false); });
+// ================== ENTER KEY & SEND BUTTON ==================
+// Enter key -> Text mode ONLY
+document.getElementById('chat-input').addEventListener('keydown', function(e) { 
+    if(e.key === 'Enter') { 
+        e.preventDefault(); 
+        sendChatMsg(false); // 🔥 FALSE = NO VOICE
+    } 
+});
 
 // ================== DASHBOARD ==================
 async function loadDashboardStats() {
@@ -1001,7 +1022,7 @@ window.addEventListener('resize',()=>{
 """
 
 # ============================================================
-# ROUTES
+# BACKEND ROUTES
 # ============================================================
 @app.route('/')
 def index():
@@ -1143,19 +1164,20 @@ def health():
         'groq':'Connected' if client else 'Missing GROQ_API_KEY',
         'gtts':'Installed' if GTTS_AVAILABLE else 'Run: pip install gTTS',
         'agora':'Configured' if (AGORA_APP_ID and AGORA_APP_ID!='demo') else 'Simulated mode',
-        'version':'13.0 Jarvis Edition - Chat Text Only, Mic Voice'
+        'version':'14.0 Jarvis Edition - ULTIMATE FIX'
     })
 
 if __name__ == '__main__':
     port = int(os.getenv("PORT",5000))
     print("\n" + "="*70)
-    print("  SAMVAD AI v13.0 - CHAT TEXT ONLY, MIC = VOICE")
+    print("  SAMVAD AI v14.0 - ULTIMATE FIX (CHAT TEXT, MIC VOICE)")
     print("="*70)
     print(f"  Server   : http://localhost:{port}")
     print(f"  Groq AI  : {'READY' if client else 'Set GROQ_API_KEY'}")
     print(f"  gTTS     : {'INSTALLED' if GTTS_AVAILABLE else 'Run: pip install gTTS'}")
     print("="*70)
-    print("  ✅ CHAT: Type → Text only, NO voice")
-    print("  ✅ MIC:  Speak → AI replies with VOICE")
+    print("  ✅ CHAT (Type + Enter)  -> Text only, NO voice")
+    print("  ✅ MIC (Click + Speak)  -> Full Voice Conversation")
+    print("  ✅ 'Send' button in Overlay to control when to send")
     print("="*70+"\n")
     app.run(debug=False, host='0.0.0.0', port=port)
