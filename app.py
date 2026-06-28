@@ -102,13 +102,24 @@ HINDI_KEYWORDS = {
     'do','dunga','abhi','kal','aaj','subah','shaam','raat','din'
 }
 
+# Common English words to detect English
+ENGLISH_COMMON = {
+    'hello','hi','hey','yes','no','ok','okay','thanks','thank','please','help','sorry',
+    'good','bad','fine','well','great','awesome','cool','nice','love','like','want',
+    'need','get','have','do','go','come','see','look','tell','say','ask','answer',
+    'know','think','feel','work','time','day','week','month','year','today','tomorrow',
+    'yesterday','now','later','soon','always','never','maybe','probably','actually',
+    'really','very','too','also','just','only','even','still','already','yet','ever',
+    'once','twice','three','four','five','six','seven','eight','nine','ten'
+}
+
 def detect_language(text):
     if not text or not text.strip():
         return "English"
-    text_lower = text.lower()
-    text_clean = re.sub(r'[^a-z0-9 ]', ' ', text_lower)
-    words = set(text_clean.split())
     
+    text_lower = text.lower()
+    
+    # 1. Script detection (highest priority)
     tamil_script_count = sum(1 for c in text if c in TAMIL_SCRIPT)
     hindi_script_count = sum(1 for c in text if c in HINDI_SCRIPT)
     if tamil_script_count >= 2:
@@ -116,39 +127,49 @@ def detect_language(text):
     if hindi_script_count >= 2:
         return "Hindi"
     
-    tamil_match_count = 0
+    # 2. Tokenize
+    text_clean = re.sub(r'[^a-z0-9 ]', ' ', text_lower)
+    words = set(text_clean.split())
+    
+    # 3. Count matches for each language
+    tamil_matches = 0
+    hindi_matches = 0
+    english_matches = 0
+    
     for w in words:
         if w in TAMIL_KEYWORDS:
-            tamil_match_count += 1
-    hindi_match_count = 0
-    for w in words:
+            tamil_matches += 1
         if w in HINDI_KEYWORDS:
-            hindi_match_count += 1
+            hindi_matches += 1
+        if w in ENGLISH_COMMON:
+            english_matches += 1
     
-    if tamil_match_count < 2:
+    # 4. Substring matches for longer words
+    if tamil_matches < 3:
         for key in TAMIL_KEYWORDS:
             if len(key) > 3 and key in text_lower:
-                tamil_match_count += 1
-                if tamil_match_count >= 2:
-                    break
-    if hindi_match_count < 2:
+                tamil_matches += 0.5
+    if hindi_matches < 3:
         for key in HINDI_KEYWORDS:
             if len(key) > 3 and key in text_lower:
-                hindi_match_count += 1
-                if hindi_match_count >= 2:
-                    break
+                hindi_matches += 0.5
     
-    if tamil_match_count >= 2:
-        return "Tamil"
-    if hindi_match_count >= 2:
+    # 5. Decision logic
+    # If Hindi score is significantly higher than Tamil and >=2
+    if hindi_matches > tamil_matches and hindi_matches >= 2:
         return "Hindi"
+    if tamil_matches > hindi_matches and tamil_matches >= 2:
+        return "Tamil"
     
-    if any(text_lower.endswith(s) for s in ['nu', 'la', 'ku', 'a', 'um']):
-        if any(w in text_lower for w in ['naan', 'nee', 'avan', 'aval']):
-            return "Tamil"
-    if any(text_lower.endswith(s) for s in ['hoon', 'hai', 'raha']):
-        if any(w in text_lower for w in ['aap', 'tum', 'mai']):
-            return "Hindi"
+    # If both scores are low but English words present
+    if english_matches >= 2:
+        return "English"
+    
+    # Fallback to whichever has at least 2 matches
+    if tamil_matches >= 2:
+        return "Tamil"
+    if hindi_matches >= 2:
+        return "Hindi"
     
     return "English"
 
@@ -208,7 +229,7 @@ def gen_agora_token(channel, uid=0, role=1, expire_seconds=3600):
         return {"token": f"TOKEN_{channel}_{int(time.time())}", "app_id": AGORA_APP_ID, "channel": channel, "uid": uid, "simulated": True}
 
 # ============================================================
-# UI HTML – WITH INTERRUPT HANDLING & CONTINUOUS LISTENING
+# UI HTML – WITH CORRECT LANGUAGE DETECTION
 # ============================================================
 UI_HTML = r"""
 <!DOCTYPE html>
@@ -662,16 +683,34 @@ function setMode(btn, mode) {
   chatMode = mode;
 }
 
+// ================== CORRECTED FRONTEND LANGUAGE DETECTION ==================
 function detectLangDisplay(txt) {
-  if(/[\u0B80-\u0BFF]/.test(txt)) return 'தமிழ்';
-  if(/[\u0900-\u097F]/.test(txt)) return 'हिन्दी';
-  const tanglish = ['unga','en','naan','nee','avan','aval','ivanga','ippo','appo','eppadi','sollu','pannu','irukku','vanthu','nalla','romba','konjam','mudiyum','theriyum','padi','velai','veedu','pesu','pesanum','enakku','yennakku','illai','therla','yenakku','yenna','yeppadi','seri','sari','aama','machan','da','bro','anna','akka'];
+  if (/[\u0B80-\u0BFF]/.test(txt)) return 'தமிழ்';
+  if (/[\u0900-\u097F]/.test(txt)) return 'हिन्दी';
+  
   const lower = txt.toLowerCase();
-  let tc = 0;
-  for(const k of tanglish){ if(lower.includes(k)){tc++;if(tc>=2)return 'தமிழ்';} }
+  const tanglish = ['unga','en','naan','nee','avan','aval','ivanga','ippo','appo','eppadi','sollu','pannu','irukku','vanthu','nalla','romba','konjam','mudiyum','theriyum','padi','velai','veedu','pesu','pesanum','enakku','yennakku','illai','therla','yenakku','yenna','yeppadi','seri','sari','aama','machan','da','bro','anna','akka'];
   const hinglish = ['aap','tum','mai','hum','kya','kaise','kab','kyu','kaun','hai','hoon','raha','kar','karo','karna','jao','aao','batana','suno','dekho','acha','theek','sahi','nahi','haan','ji','yaar','bhai','bahut','bilkul'];
-  let hc = 0;
-  for(const k of hinglish){ if(lower.includes(k)){hc++;if(hc>=2)return 'हिन्दी';} }
+  const englishWords = ['hello','hi','hey','yes','no','ok','okay','thanks','please','help','sorry','good','bad','fine','great','awesome','love','like','want','need','get','have','do','go','come','see','look','tell','say','ask','answer','know','think','feel','work','time','day','week','month','year','today','tomorrow','yesterday','now','later','soon','always','never','maybe','probably','actually','really','very','too','also','just','only','even','still','already','yet','ever','once','twice','three'];
+  
+  let tamilCount = 0, hindiCount = 0, englishCount = 0;
+  for (const w of tanglish) {
+    if (lower.includes(w)) tamilCount++;
+    if (tamilCount >= 2) return 'தமிழ்';
+  }
+  for (const w of hinglish) {
+    if (lower.includes(w)) hindiCount++;
+    if (hindiCount >= 2) return 'हिन्दी';
+  }
+  for (const w of englishWords) {
+    if (lower.includes(w)) englishCount++;
+    if (englishCount >= 2) return 'English';
+  }
+  
+  // If still undecided, compare counts
+  if (tamilCount > hindiCount && tamilCount >= 1) return 'தமிழ்';
+  if (hindiCount > tamilCount && hindiCount >= 1) return 'हिन्दी';
+  
   return 'English';
 }
 
@@ -1233,20 +1272,19 @@ def health():
         'groq':'Connected' if client else 'Missing GROQ_API_KEY',
         'gtts':'Installed' if GTTS_AVAILABLE else 'Run: pip install gTTS',
         'agora':'Configured' if (AGORA_APP_ID and AGORA_APP_ID!='demo') else 'Simulated mode',
-        'version':'18.0 - INTERRUPT HANDLING + CONTINUOUS LISTENING'
+        'version':'18.1 - FIXED LANGUAGE DETECTION'
     })
 
 if __name__ == '__main__':
     port = int(os.getenv("PORT",5000))
     print("\n" + "="*70)
-    print("  SAMVAD AI v18.0 - INTERRUPT + CONTINUOUS LISTENING")
+    print("  SAMVAD AI v18.1 - FIXED LANGUAGE DETECTION")
     print("="*70)
     print(f"  Server   : http://localhost:{port}")
     print(f"  Groq AI  : {'READY' if client else 'Set GROQ_API_KEY'}")
     print(f"  gTTS     : {'INSTALLED' if GTTS_AVAILABLE else 'Run: pip install gTTS'}")
     print("="*70)
-    print("  🎤 AI speaks, you can interrupt anytime!")
-    print("  🔄 AI remembers conversation history.")
-    print("  🗣️ AI replies in your language.")
+    print("  ✅ Language detection now balances Tamil, Hindi, and English.")
+    print("  ✅ AI replies in your language.")
     print("="*70+"\n")
     app.run(debug=False, host='0.0.0.0', port=port)
