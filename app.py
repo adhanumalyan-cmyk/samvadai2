@@ -39,7 +39,7 @@ convos = {}
 cnt = 0
 calls = {}
 
-# ====================== LANGUAGE DETECTION (TANGLISH/HINGLISH) ======================
+# ====================== ENHANCED LANGUAGE DETECTION ======================
 TAMIL_SCRIPT = set('அஆஇஈஉஊஎஏஐஒஓஔகஙசஜஞடணதநபமயரலவழளறனஷஸஹ')
 HINDI_SCRIPT = set('अआइईउऊएऐओऔकखगघचछजझटठडढणतथदधनपफबभमयरलवशषसह')
 
@@ -66,7 +66,15 @@ TAMIL_KEYWORDS = {
     'enga','inge','ange','engayum','athu','ithu','ethu',
     'yenakku','yenna','yeppadi','yengayo','yaruvadhu','yaravathu',
     'thevai','thevailla','paarkalaam','sollanam','kettukonga','pakkalaam',
-    'vanakkam','namasthe','superam','machan','da','di','bro','akka','anna'
+    'vanakkam','namasthe','superam','machan','da','di','bro','akka','anna',
+    'romba','konjam','mikka','neraiya','nalla','kettadhu','seri','sari','aama',
+    'theriyala','therinjukku','mudiyala','mudiyum','vendam','venum','pothum',
+    'oru','rendu','moondru','naalu','aindhu','aaru','ezhu','ettu','ombathu','pathu',
+    'paisa','kasu','panam','padippu','padi','school','college','padippa',
+    'unga','en','naan','nee','avan','aval','ivanga','avanga','eppadi','ippo','appo',
+    'sollu','pannu','irukku','vanthu','pesu','pesanum','theriyum','enakku','yennakku',
+    'illai','therla','puriyala','puriyuthu','veetla','kadai','office','shop',
+    'machan','bro','akka','anna','da','di','yaaru'
 }
 
 HINDI_KEYWORDS = {
@@ -83,41 +91,71 @@ HINDI_KEYWORDS = {
     'abhi','kal','aaj','subah','shaam','raat','din',
     'yaar','dost','matlab','matlab','seedha','zyada','thoda',
     'bahut','bilkul','ekdum','zaroor','phir','toh','lekin','aur',
-    'namaste','namaskar','kaam','paisa','help','karo','bolo'
+    'namaste','namaskar','kaam','paisa','help','karo','bolo',
+    'hai','hain','hoon','the','thi','raha','rahi','rahe',
+    'kar','karo','karna','karte','karta','karti','karega',
+    'jao','jaana','jaate','jaega','aao','aana','aate','aega',
+    'batana','batavo','batao','bataiye','sunna','suno','suniye',
+    'dekho','dekha','dekhna','acha','theek','sahi','galat','nahi',
+    'haan','ji','bhai','behan','mera','tera','uska','humara',
+    'tumhara','apna','chahiye','chahie','manga','mangta','dena',
+    'do','dunga','abhi','kal','aaj','subah','shaam','raat','din'
 }
 
 def detect_language(text):
+    if not text or not text.strip():
+        return "English"
     text_lower = text.lower()
     text_clean = re.sub(r'[^a-z0-9 ]', ' ', text_lower)
     words = set(text_clean.split())
     
     tamil_script_count = sum(1 for c in text if c in TAMIL_SCRIPT)
     hindi_script_count = sum(1 for c in text if c in HINDI_SCRIPT)
-    if tamil_script_count >= 2: return "Tamil"
-    if hindi_script_count >= 2: return "Hindi"
+    if tamil_script_count >= 2:
+        return "Tamil"
+    if hindi_script_count >= 2:
+        return "Hindi"
     
-    tamil_match_count = sum(1 for w in words if w in TAMIL_KEYWORDS)
-    hindi_match_count = sum(1 for w in words if w in HINDI_KEYWORDS)
+    tamil_match_count = 0
+    for w in words:
+        if w in TAMIL_KEYWORDS:
+            tamil_match_count += 1
+    hindi_match_count = 0
+    for w in words:
+        if w in HINDI_KEYWORDS:
+            hindi_match_count += 1
     
     if tamil_match_count < 2:
         for key in TAMIL_KEYWORDS:
             if len(key) > 3 and key in text_lower:
                 tamil_match_count += 1
-                if tamil_match_count >= 2: break
-    if tamil_match_count >= 2: return "Tamil"
-    if hindi_match_count >= 2: return "Hindi"
+                if tamil_match_count >= 2:
+                    break
+    if hindi_match_count < 2:
+        for key in HINDI_KEYWORDS:
+            if len(key) > 3 and key in text_lower:
+                hindi_match_count += 1
+                if hindi_match_count >= 2:
+                    break
+    
+    if tamil_match_count >= 2:
+        return "Tamil"
+    if hindi_match_count >= 2:
+        return "Hindi"
+    
+    if any(text_lower.endswith(s) for s in ['nu', 'la', 'ku', 'a', 'um']):
+        if any(w in text_lower for w in ['naan', 'nee', 'avan', 'aval']):
+            return "Tamil"
+    if any(text_lower.endswith(s) for s in ['hoon', 'hai', 'raha']):
+        if any(w in text_lower for w in ['aap', 'tum', 'mai']):
+            return "Hindi"
+    
     return "English"
 
 MODE_PROMPTS = {
-    "sales": """You are a FRIENDLY Sales Agent at FlowZint.
-Always capture lead details (Name, Phone, Company, Requirement).
-Keep replies SHORT: 2-3 sentences.""",
-    "support": """You are a PATIENT Technical Support Agent at FlowZint.
-Ask clear questions. Give step-by-step solutions.
-Keep replies CONCISE: 3-4 sentences.""",
-    "customer": """You are an EMPATHETIC Customer Care Agent at FlowZint.
-Always apologize first. Offer solutions.
-Short, human replies: 2-3 sentences."""
+    "sales": """You are a FRIENDLY Sales Agent at FlowZint. Always capture lead details. Keep replies SHORT: 2-3 sentences.""",
+    "support": """You are a PATIENT Technical Support Agent at FlowZint. Ask clear questions. Give step-by-step solutions. Keep replies CONCISE: 3-4 sentences.""",
+    "customer": """You are an EMPATHETIC Customer Care Agent at FlowZint. Always apologize first. Offer solutions. Short, human replies: 2-3 sentences."""
 }
 
 def gen_agora_token(channel, uid=0, role=1, expire_seconds=3600):
@@ -170,7 +208,7 @@ def gen_agora_token(channel, uid=0, role=1, expire_seconds=3600):
         return {"token": f"TOKEN_{channel}_{int(time.time())}", "app_id": AGORA_APP_ID, "channel": channel, "uid": uid, "simulated": True}
 
 # ============================================================
-# UI HTML – CONTINUOUS CONVERSATION
+# UI HTML – WITH INTERRUPT HANDLING & CONTINUOUS LISTENING
 # ============================================================
 UI_HTML = r"""
 <!DOCTYPE html>
@@ -521,7 +559,7 @@ h1.hero-title { font-family:'Space Grotesk',sans-serif; font-size:clamp(50px,6vw
       </div>
     </div>
     <div class="chat-input-area">
-      <button class="mic-btn" id="micBtn" title="Click once to start Voice Conversation (Continuous)">🎙️</button>
+      <button class="mic-btn" id="micBtn" title="Click to start Voice Conversation (supports interruption)">🎙️</button>
       <input class="chat-input-box" id="chat-input" type="text" placeholder="Type in Tamil / Hindi / Tanglish / Hinglish..." maxlength="300">
       <button class="send-btn" onclick="sendChatMsg(false)" title="Send (Text Only)">➤</button>
     </div>
@@ -595,6 +633,7 @@ let jarvisRecognition = null;
 let jarvisActive = false;
 let isProcessing = false; 
 let currentTranscript = '';
+let audioElement = null;  // to track TTS audio
 
 function showSection(id) {
   document.querySelectorAll('section').forEach(s=>s.style.display='none');
@@ -643,29 +682,57 @@ function getLangCode(ld) {
 }
 
 // ================== TTS FUNCTIONS ===========================
-async function speakText(text, langDisplay, callback) {
+function cancelTTS() {
+  if (audioElement) {
+    audioElement.pause();
+    audioElement.currentTime = 0;
+    audioElement = null;
+  }
+  window.speechSynthesis && window.speechSynthesis.cancel();
+}
+
+function speakText(text, langDisplay, callback) {
     if (!text) { if(callback) callback(); return; }
     console.log('🔊 TTS:', text.substring(0, 30), 'Lang:', langDisplay);
     const langCode = getLangCode(langDisplay);
     let ttsFailed = false;
 
     try {
-        const res = await fetch('/api/tts', {
+        fetch('/api/tts', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ text, lang: langCode })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.audio) {
+                cancelTTS(); // ensure no previous audio
+                audioElement = new Audio('data:audio/mp3;base64,' + data.audio);
+                audioElement.onended = () => {
+                    audioElement = null;
+                    if (callback) callback();
+                };
+                audioElement.onerror = () => {
+                    audioElement = null;
+                    fallbackToBrowserSpeech(text, langDisplay, callback);
+                };
+                audioElement.play().catch(() => {
+                    audioElement = null;
+                    fallbackToBrowserSpeech(text, langDisplay, callback);
+                });
+            } else {
+                ttsFailed = true;
+                fallbackToBrowserSpeech(text, langDisplay, callback);
+            }
+        })
+        .catch(() => {
+            ttsFailed = true;
+            fallbackToBrowserSpeech(text, langDisplay, callback);
         });
-        const data = await res.json();
-        if (data.audio) {
-            const audio = new Audio('data:audio/mp3;base64,' + data.audio);
-            audio.onended = () => { if(callback) callback(); };
-            audio.onerror = () => { fallbackToBrowserSpeech(text, langDisplay, callback); };
-            audio.play().catch(() => { fallbackToBrowserSpeech(text, langDisplay, callback); });
-            return;
-        } else { ttsFailed = true; }
-    } catch (e) { console.log('TTS API Error:', e); ttsFailed = true; }
-
-    if (ttsFailed) { fallbackToBrowserSpeech(text, langDisplay, callback); }
+    } catch (e) {
+        console.log('TTS API Error:', e);
+        fallbackToBrowserSpeech(text, langDisplay, callback);
+    }
 }
 
 function fallbackToBrowserSpeech(text, langDisplay, callback) {
@@ -712,16 +779,18 @@ function hideJarvis() {
   document.getElementById('micBtn').classList.remove('jarvis-active');
   jarvisActive = false;
   if(jarvisRecognition) { try{ jarvisRecognition.stop(); } catch(e){} }
+  cancelTTS();
 }
 
 function cancelJarvis() {
   isProcessing = false;
   currentTranscript = '';
   if(jarvisRecognition) { try{ jarvisRecognition.stop(); } catch(e){} }
+  cancelTTS();
   hideJarvis();
 }
 
-// ================== CONTINUOUS CONVERSATION LOGIC ==================
+// ================== CONTINUOUS CONVERSATION WITH INTERRUPT ==================
 
 function startListening() {
     if (!jarvisActive) return;
@@ -736,7 +805,10 @@ function startListening() {
     
     const recognition = new SR();
     jarvisRecognition = recognition;
-    recognition.lang = 'en-US';
+    
+    let langIndex = 0;
+    const langs = ['ta-IN', 'hi-IN', 'en-US'];
+    recognition.lang = langs[langIndex];
     recognition.continuous = true;
     recognition.interimResults = true;
     recognition.maxAlternatives = 1;
@@ -746,8 +818,9 @@ function startListening() {
     let silenceTimer = null;
 
     recognition.onstart = () => {
-        console.log('🎧 Listening...');
-        showJarvis('Listening...', 'Speak now...', true);
+        console.log('🎧 Listening with language:', recognition.lang);
+        const langName = { 'ta-IN':'Tamil', 'hi-IN':'Hindi', 'en-US':'English' }[recognition.lang] || 'Unknown';
+        showJarvis('Listening...', 'Language: ' + langName, true);
         finalText = '';
         interimText = '';
         document.getElementById('jarvis-send-btn').style.display = 'inline-block';
@@ -760,6 +833,14 @@ function startListening() {
     };
 
     recognition.onresult = (event) => {
+        // If user speaks while TTS is playing, interrupt!
+        if (audioElement || (window.speechSynthesis && window.speechSynthesis.speaking)) {
+            console.log('🛑 Interrupt detected! Stopping TTS...');
+            cancelTTS();
+            // Don't stop recognition, just cancel TTS and process this new input
+            // We'll let the recognition continue to collect speech.
+        }
+
         if (silenceTimer) clearTimeout(silenceTimer);
         let interim = '';
         for (let i = event.resultIndex; i < event.results.length; i++) {
@@ -782,13 +863,29 @@ function startListening() {
 
     recognition.onerror = (event) => {
         console.warn('Mic Error:', event.error);
-        if (event.error === 'no-speech' || event.error === 'aborted') {
-            // Silent fail
-        } else if (event.error === 'not-allowed') {
+        if (event.error === 'language-not-supported' || event.error === 'no-speech') {
+            if (langIndex < langs.length - 1) {
+                langIndex++;
+                recognition.lang = langs[langIndex];
+                recognition.start();
+                return;
+            }
+        }
+        if (event.error === 'not-allowed') {
             alert('Please allow microphone access.');
             cancelJarvis();
         } else {
-            if (jarvisActive && !isProcessing) setTimeout(() => startListening(), 500);
+            if (event.error === 'aborted' || event.error === 'network') {
+                if (jarvisActive && !isProcessing) {
+                    if (langIndex < langs.length - 1) {
+                        langIndex++;
+                        recognition.lang = langs[langIndex];
+                    }
+                    setTimeout(() => {
+                        if (jarvisActive && !isProcessing) startListening();
+                    }, 500);
+                }
+            }
         }
     };
 
@@ -798,6 +895,10 @@ function startListening() {
             if (finalText.trim() || interimText.trim()) {
                 processVoiceInput(finalText + interimText);
             } else {
+                if (langIndex < langs.length - 1) {
+                    langIndex++;
+                    recognition.lang = langs[langIndex];
+                }
                 setTimeout(() => startListening(), 300);
             }
         }
@@ -811,6 +912,7 @@ function processVoiceInput(text) {
     if (isProcessing) return;
     isProcessing = true;
     
+    // Stop recognition temporarily to avoid duplicate processing
     if (jarvisRecognition) { try { jarvisRecognition.stop(); } catch(e) {} }
     
     showJarvis('Processing...', 'AI is thinking...', false);
@@ -820,10 +922,13 @@ function processVoiceInput(text) {
     
     sendChatMsg(true).then(() => {
         isProcessing = false;
-        if (jarvisActive) setTimeout(() => startListening(), 1500);
+        if (jarvisActive) {
+            // Give a small delay before restarting listening
+            setTimeout(() => startListening(), 800);
+        }
     }).catch(() => {
         isProcessing = false;
-        if (jarvisActive) setTimeout(() => startListening(), 1500);
+        if (jarvisActive) setTimeout(() => startListening(), 800);
     });
 }
 
@@ -1019,7 +1124,6 @@ def chat_stream():
     mode = data.get('mode','support')
     if not msg: return jsonify({'error':'Message required'}),400
 
-    # Detect language (Tanglish/Hinglish supported)
     lang = detect_language(msg)
     if not cid or cid not in convos:
         cnt += 1
@@ -1027,8 +1131,7 @@ def chat_stream():
         convos[cid] = {'id':cid,'messages':[],'language':lang,'mode':mode}
     convos[cid]['messages'].append({'role':'user','content':msg,'language':lang})
 
-    # 🔥 FIX: Extremely strict system prompt to force output language
-    system_prompt = f"""You are Samvad AI - FlowZint's intelligent business assistant.
+    system_prompt = f"""You are Samvad AI - FlowZint's intelligent assistant.
 Current Mode: {mode.upper()}
 {MODE_PROMPTS.get(mode, MODE_PROMPTS['support'])}
 
@@ -1042,8 +1145,9 @@ NEVER reply in English if user wrote in Tamil or Hindi.
 NEVER mix languages. Output 100% pure {lang}.
 
 RULES:
-1. Keep replies SHORT: 2-3 sentences max.
-2. Be warm and conversational.
+- Keep replies SHORT: 2-3 sentences.
+- Be warm, conversational.
+- Use respectful terms.
 """
     
     def generate():
@@ -1129,20 +1233,20 @@ def health():
         'groq':'Connected' if client else 'Missing GROQ_API_KEY',
         'gtts':'Installed' if GTTS_AVAILABLE else 'Run: pip install gTTS',
         'agora':'Configured' if (AGORA_APP_ID and AGORA_APP_ID!='demo') else 'Simulated mode',
-        'version':'16.0 - FORCED LANGUAGE FIX'
+        'version':'18.0 - INTERRUPT HANDLING + CONTINUOUS LISTENING'
     })
 
 if __name__ == '__main__':
     port = int(os.getenv("PORT",5000))
     print("\n" + "="*70)
-    print("  SAMVAD AI v16.0 - FORCED LANGUAGE FIX")
+    print("  SAMVAD AI v18.0 - INTERRUPT + CONTINUOUS LISTENING")
     print("="*70)
     print(f"  Server   : http://localhost:{port}")
     print(f"  Groq AI  : {'READY' if client else 'Set GROQ_API_KEY'}")
     print(f"  gTTS     : {'INSTALLED' if GTTS_AVAILABLE else 'Run: pip install gTTS'}")
     print("="*70)
-    print("  ✅ CHAT (Type) -> Text only.")
-    print("  ✅ MIC (Click) -> Continuous Voice Conversation.")
-    print("  ✅ AI forced to reply in YOUR language (Tamil/Hindi/English).")
+    print("  🎤 AI speaks, you can interrupt anytime!")
+    print("  🔄 AI remembers conversation history.")
+    print("  🗣️ AI replies in your language.")
     print("="*70+"\n")
     app.run(debug=False, host='0.0.0.0', port=port)
