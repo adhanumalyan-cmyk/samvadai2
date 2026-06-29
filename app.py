@@ -236,299 +236,1086 @@ UI_HTML = r"""
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Samvad AI — Multilingual Voice AI</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
 <style>
-:root { --bg: #0F0E23; --bg2: #13122a; --purple: #6C3BF5; --cyan: #00D4FF; --purple-light: #a78bfa; --white: #ffffff; --glass: rgba(255,255,255,0.04); --glass-border: rgba(255,255,255,0.08); --glass-border-purple: rgba(108,59,245,0.35); }
-* { margin:0; padding:0; box-sizing:border-box; }
-html { scroll-behavior:smooth; }
-body { background:var(--bg); color:var(--white); font-family:'Inter',sans-serif; overflow-x:hidden; }
-#bg-canvas { position:fixed; top:0; left:0; width:100%; height:100%; z-index:0; pointer-events:none; }
-.page { position:relative; z-index:1; }
-nav { position:fixed; top:0; left:0; right:0; z-index:1000; display:flex; align-items:center; justify-content:space-between; padding:0 60px; height:68px; background:rgba(15,14,35,0.75); backdrop-filter:blur(20px); border-bottom:1px solid rgba(108,59,245,0.15); }
-.nav-logo { font-family:'Space Grotesk',sans-serif; font-size:22px; font-weight:700; background:linear-gradient(135deg,#6C3BF5,#00D4FF); -webkit-background-clip:text; -webkit-text-fill-color:transparent; letter-spacing:-0.5px; }
-.nav-links { display:flex; align-items:center; gap:8px; }
-.nav-links a { color:rgba(255,255,255,0.6); text-decoration:none; font-size:14px; padding:8px 16px; border-radius:8px; transition:all 0.2s; cursor:pointer; }
-.nav-links a:hover { color:#fff; background:rgba(255,255,255,0.05); }
-.nav-links a.active { color:var(--cyan); }
-.nav-cta { background:linear-gradient(135deg,#6C3BF5,#00D4FF) !important; color:#fff !important; -webkit-text-fill-color:#fff !important; padding:9px 22px !important; border-radius:25px !important; font-weight:600 !important; }
-section { min-height:100vh; padding:100px 60px 80px; display:none; }
-section.active { display:block; }
-#landing { display:flex; align-items:center; justify-content:space-between; gap:60px; padding-top:120px; }
-.hero-left { flex:1; max-width:580px; }
-.hero-badge { display:inline-flex; align-items:center; gap:8px; background:rgba(108,59,245,0.12); border:1px solid rgba(108,59,245,0.35); border-radius:20px; padding:7px 16px; font-size:13px; color:var(--purple-light); margin-bottom:28px; }
-.badge-dot { width:7px; height:7px; background:var(--purple); border-radius:50%; animation:badgePulse 2s infinite; }
-@keyframes badgePulse { 0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(108,59,245,0.4)} 50%{opacity:0.6;box-shadow:0 0 0 6px rgba(108,59,245,0)} }
-h1.hero-title { font-family:'Space Grotesk',sans-serif; font-size:clamp(50px,6vw,80px); font-weight:700; line-height:1.04; letter-spacing:-2px; margin-bottom:22px; }
-.grad { background:linear-gradient(135deg,#6C3BF5 0%,#00D4FF 60%,#a78bfa 100%); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-size:200%; animation:gradShift 5s ease infinite; }
-@keyframes gradShift { 0%,100%{background-position:0%} 50%{background-position:100%} }
-.hero-tagline { font-size:18px; color:rgba(255,255,255,0.55); line-height:1.65; margin-bottom:44px; }
-.hero-btns { display:flex; gap:16px; flex-wrap:wrap; }
-.btn-primary { background:linear-gradient(135deg,#6C3BF5,#00D4FF); border:none; color:#fff; padding:15px 36px; border-radius:50px; font-size:15px; font-weight:600; cursor:pointer; box-shadow:0 0 30px rgba(108,59,245,0.35); transition:all 0.3s; font-family:'Inter',sans-serif; }
-.btn-primary:hover { box-shadow:0 0 55px rgba(108,59,245,0.6); transform:translateY(-2px); }
-.btn-ghost { background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.12); color:#fff; padding:15px 36px; border-radius:50px; font-size:15px; font-weight:500; cursor:pointer; transition:all 0.3s; font-family:'Inter',sans-serif; }
-.btn-ghost:hover { background:rgba(255,255,255,0.08); border-color:rgba(108,59,245,0.4); }
-.hero-right { flex:1; display:flex; align-items:center; justify-content:center; min-height:500px; position:relative; }
-.sphere-canvas-wrap { position:relative; width:420px; height:420px; }
-#hero-canvas { width:420px; height:420px; border-radius:50%; }
-.sphere-label { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); text-align:center; pointer-events:none; }
-.sphere-label span { font-family:'Space Grotesk',sans-serif; font-size:26px; font-weight:700; background:linear-gradient(135deg,#fff,#00D4FF); -webkit-background-clip:text; -webkit-text-fill-color:transparent; display:block; }
-.orbit-wrap { position:absolute; inset:0; pointer-events:none; }
-.orbit-icon { position:absolute; width:48px; height:48px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:20px; background:rgba(108,59,245,0.2); border:1px solid rgba(108,59,245,0.4); backdrop-filter:blur(10px); }
-.o1{top:10%;left:50%;animation:orbit1 6s linear infinite}
-.o2{top:50%;left:5%;animation:orbit2 7s linear infinite}
-.o3{top:80%;left:40%;animation:orbit3 8s linear infinite}
-.o4{top:30%;left:85%;animation:orbit4 5s linear infinite}
-@keyframes orbit1{0%,100%{transform:translate(-50%,-50%) translateY(-30px)}50%{transform:translate(-50%,-50%) translateY(30px)}}
-@keyframes orbit2{0%,100%{transform:translate(0,0) rotate(0deg)}50%{transform:translate(20px,-20px) rotate(180deg)}}
-@keyframes orbit3{0%,100%{transform:translate(0,0)}50%{transform:translate(-20px,-30px)}}
-@keyframes orbit4{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(-15px,15px) scale(1.15)}}
-.stats-bar { display:flex; justify-content:center; border-top:1px solid rgba(255,255,255,0.05); border-bottom:1px solid rgba(255,255,255,0.05); background:rgba(0,0,0,0.2); }
-.stat-item { flex:1; text-align:center; padding:36px 20px; border-right:1px solid rgba(255,255,255,0.06); }
-.stat-item:last-child { border-right:none; }
-.stat-num { font-family:'Space Grotesk',sans-serif; font-size:38px; font-weight:700; background:linear-gradient(135deg,#6C3BF5,#00D4FF); -webkit-background-clip:text; -webkit-text-fill-color:transparent; display:block; }
-.stat-label { font-size:13px; color:rgba(255,255,255,0.45); margin-top:6px; }
-.sec-title { font-family:'Space Grotesk',sans-serif; font-size:clamp(34px,4vw,52px); font-weight:700; letter-spacing:-1px; margin-bottom:14px; text-align:center; }
-.sec-sub { font-size:16px; color:rgba(255,255,255,0.5); text-align:center; margin-bottom:64px; line-height:1.6; }
-#features { display:block; min-height:100vh; padding:120px 60px 80px; }
-.feature-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:24px; max-width:1000px; margin:0 auto; }
-.feat-card { background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.07); border-radius:24px; padding:40px 36px; position:relative; overflow:hidden; cursor:default; transition:all 0.4s cubic-bezier(0.23,1,0.32,1); }
-.feat-card::before { content:''; position:absolute; inset:0; border-radius:24px; background:linear-gradient(135deg,rgba(108,59,245,0.08),rgba(0,212,255,0.04)); opacity:0; transition:opacity 0.4s; }
-.feat-card:hover { border-color:rgba(108,59,245,0.4); transform:translateY(-8px) perspective(600px) rotateX(2deg); box-shadow:0 30px 80px rgba(108,59,245,0.2); }
-.feat-card:hover::before { opacity:1; }
-.feat-icon-3d { width:70px; height:70px; border-radius:18px; display:flex; align-items:center; justify-content:center; font-size:32px; margin-bottom:24px; }
-.fi-p { background:rgba(108,59,245,0.18); border:1px solid rgba(108,59,245,0.3); box-shadow:0 8px 32px rgba(108,59,245,0.2); }
-.fi-c { background:rgba(0,212,255,0.12); border:1px solid rgba(0,212,255,0.25); box-shadow:0 8px 32px rgba(0,212,255,0.15); }
-.fi-m { background:rgba(236,72,153,0.12); border:1px solid rgba(236,72,153,0.25); box-shadow:0 8px 32px rgba(236,72,153,0.15); }
-.fi-g { background:rgba(52,211,153,0.12); border:1px solid rgba(52,211,153,0.25); box-shadow:0 8px 32px rgba(52,211,153,0.15); }
-.feat-card h3 { font-family:'Space Grotesk',sans-serif; font-size:22px; font-weight:600; margin-bottom:12px; }
-.feat-card p { font-size:15px; color:rgba(255,255,255,0.5); line-height:1.7; }
-.feat-tag { display:inline-block; margin-top:20px; padding:5px 14px; border-radius:20px; font-size:12px; font-weight:500; background:rgba(108,59,245,0.15); color:var(--purple-light); border:1px solid rgba(108,59,245,0.25); }
-#dashboard { display:block; min-height:100vh; padding:100px 0 0; }
-.dash-layout { display:flex; height:calc(100vh - 100px); }
-.dash-sidebar { width:240px; background:rgba(0,0,0,0.4); border-right:1px solid rgba(255,255,255,0.05); backdrop-filter:blur(20px); padding:30px 0; flex-shrink:0; }
-.dash-logo { padding:0 24px 30px; font-family:'Space Grotesk',sans-serif; font-size:20px; font-weight:700; background:linear-gradient(135deg,#6C3BF5,#00D4FF); -webkit-background-clip:text; -webkit-text-fill-color:transparent; border-bottom:1px solid rgba(255,255,255,0.05); margin-bottom:20px; }
-.dash-nav-item { display:flex; align-items:center; gap:12px; padding:12px 24px; font-size:14px; color:rgba(255,255,255,0.5); cursor:pointer; transition:all 0.2s; border-left:3px solid transparent; }
-.dash-nav-item:hover { color:#fff; background:rgba(108,59,245,0.08); }
-.dash-nav-item.active { color:var(--cyan); border-left-color:var(--cyan); background:rgba(0,212,255,0.06); }
-.dash-icon { font-size:18px; }
-.dash-main { flex:1; padding:30px 36px; overflow-y:auto; }
-.dash-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:30px; }
-.dash-welcome h2 { font-family:'Space Grotesk',sans-serif; font-size:24px; font-weight:600; }
-.dash-welcome p { font-size:14px; color:rgba(255,255,255,0.45); margin-top:4px; }
-.dash-actions { display:flex; align-items:center; gap:16px; }
-.notif-btn { position:relative; width:40px; height:40px; border-radius:50%; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.08); display:flex; align-items:center; justify-content:center; cursor:pointer; font-size:18px; }
-.notif-badge { position:absolute; top:-2px; right:-2px; width:14px; height:14px; background:var(--purple); border-radius:50%; font-size:9px; display:flex; align-items:center; justify-content:center; border:2px solid var(--bg); }
-.avatar { width:40px; height:40px; border-radius:50%; background:linear-gradient(135deg,#6C3BF5,#00D4FF); display:flex; align-items:center; justify-content:center; font-size:16px; font-weight:600; cursor:pointer; }
-.stat-cards { display:grid; grid-template-columns:repeat(4,1fr); gap:18px; margin-bottom:28px; }
-.stat-card { background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.06); border-radius:18px; padding:22px; transition:all 0.3s; position:relative; overflow:hidden; }
-.stat-card::after { content:''; position:absolute; bottom:-20px; right:-20px; width:80px; height:80px; border-radius:50%; opacity:0.06; }
-.stat-card.sc1::after{background:#6C3BF5}.stat-card.sc2::after{background:#00D4FF}.stat-card.sc3::after{background:#a78bfa}.stat-card.sc4::after{background:#34d399}
-.stat-card:hover { border-color:rgba(108,59,245,0.3); transform:translateY(-4px); box-shadow:0 16px 40px rgba(0,0,0,0.3); }
-.sc-top { display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; }
-.sc-label { font-size:13px; color:rgba(255,255,255,0.45); }
-.sc-ico { font-size:22px; }
-.sc-val { font-family:'Space Grotesk',sans-serif; font-size:30px; font-weight:700; }
-.sc1 .sc-val{background:linear-gradient(135deg,#6C3BF5,#a78bfa);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
-.sc2 .sc-val{background:linear-gradient(135deg,#00D4FF,#0ea5e9);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
-.sc3 .sc-val{background:linear-gradient(135deg,#a78bfa,#ec4899);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
-.sc4 .sc-val{background:linear-gradient(135deg,#34d399,#06b6d4);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
-.sc-change { font-size:12px; color:#34d399; margin-top:6px; }
-.dash-grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:20px; }
-.dash-panel { background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.06); border-radius:18px; padding:24px; }
-.panel-title { font-family:'Space Grotesk',sans-serif; font-size:16px; font-weight:600; margin-bottom:20px; color:rgba(255,255,255,0.85); }
-.lang-row { margin-bottom:16px; }
-.lang-info { display:flex; justify-content:space-between; font-size:13px; margin-bottom:8px; }
-.lang-name { color:rgba(255,255,255,0.7); }
-.lang-pct { color:var(--purple-light); font-weight:500; }
-.lang-bar-bg { height:6px; background:rgba(255,255,255,0.06); border-radius:3px; overflow:hidden; }
-.lang-bar { height:100%; border-radius:3px; animation:barGrow 1.5s ease forwards; transform-origin:left; }
-@keyframes barGrow{from{width:0%}}
-.lb1{background:linear-gradient(90deg,#6C3BF5,#00D4FF)}.lb2{background:linear-gradient(90deg,#a78bfa,#6C3BF5)}.lb3{background:linear-gradient(90deg,#00D4FF,#06b6d4)}.lb4{background:linear-gradient(90deg,#ec4899,#a78bfa)}.lb5{background:linear-gradient(90deg,#34d399,#00D4FF)}
-.conv-item { display:flex; align-items:center; gap:12px; padding:12px 0; border-bottom:1px solid rgba(255,255,255,0.04); }
+/* ===== CSS RESET & ROOT TOKENS ===== */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth;font-size:16px}
+
+:root {
+  /* Warm Ivory Palette */
+  --bg:       #F4EBDD;
+  --bg2:      #ECE1CF;
+  --bg3:      #F7F1E8;
+  --border:   #DDD2C0;
+
+  /* Forest Green Primary */
+  --green:    #254F2D;
+  --green-dk: #1E4126;
+  --sage:     #7A8D5C;
+  --sage-lt:  #A9B28D;
+  --olive:    #69784D;
+
+  /* Gold Accent */
+  --gold:     #C7A86B;
+  --gold-lt:  #E4D2AA;
+
+  /* Typography */
+  --text:     #263124;
+  --text2:    #5B6851;
+  --text3:    #8A927F;
+  --textd:    #B8B3A8;
+
+  /* Status */
+  --success:  #4D7C3A;
+  --warn:     #C79B32;
+  --error:    #A94A3F;
+  --info:     #5D7A66;
+
+  /* Neumorphism shadows - the core system */
+  --neu-light: #FFFFFF;
+  --neu-dark:  #D3C6B3;
+  --neu-out:   6px 6px 14px #D3C6B3, -4px -4px 10px #FFFFFF;
+  --neu-in:    inset 4px 4px 10px #D3C6B3, inset -3px -3px 8px #FFFFFF;
+  --neu-out-sm:3px 3px 8px #D3C6B3, -2px -2px 6px #FFFFFF;
+  --neu-press: inset 3px 3px 8px #C4B89E, inset -2px -2px 6px #FFFFFF;
+  --neu-gold:  4px 4px 12px #C4A466, -2px -2px 8px #FFFFFF;
+  --neu-green: 4px 4px 14px rgba(37,79,45,0.25), -2px -2px 8px #FFFFFF;
+
+  /* Font families */
+  --font-display: 'DM Serif Display', serif;
+  --font-body: 'DM Sans', sans-serif;
+
+  /* Transitions */
+  --trans: all 0.28s cubic-bezier(0.23,1,0.32,1);
+  --trans-fast: all 0.16s ease;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-weight: 400;
+  line-height: 1.6;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ===== AMBIENT BACKGROUND ===== */
+.ambient {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+}
+.amb-blob {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  opacity: 0.18;
+  animation: blobDrift 18s ease-in-out infinite alternate;
+}
+.amb-blob:nth-child(1){width:500px;height:500px;background:#7A8D5C;top:-100px;left:-100px;animation-duration:22s}
+.amb-blob:nth-child(2){width:400px;height:400px;background:#C7A86B;top:40%;right:-120px;animation-duration:17s;animation-delay:-5s}
+.amb-blob:nth-child(3){width:300px;height:300px;background:#254F2D;bottom:-80px;left:30%;animation-duration:25s;animation-delay:-10s}
+@keyframes blobDrift{0%{transform:translate(0,0) scale(1)}100%{transform:translate(40px,30px) scale(1.08)}}
+
+/* ===== NAV ===== */
+nav {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 48px;
+  height: 70px;
+  background: rgba(244,235,221,0.82);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border-bottom: 1px solid rgba(221,210,192,0.6);
+}
+.nav-logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--font-display);
+  font-size: 22px;
+  color: var(--green);
+  text-decoration: none;
+  cursor: pointer;
+}
+.logo-orb {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--bg);
+  box-shadow: var(--neu-out-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  transition: var(--trans);
+}
+.nav-logo:hover .logo-orb{box-shadow:var(--neu-press)}
+.nav-links {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.nav-link {
+  padding: 8px 18px;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text2);
+  cursor: pointer;
+  border: none;
+  background: transparent;
+  font-family: var(--font-body);
+  transition: var(--trans-fast);
+  text-decoration: none;
+}
+.nav-link:hover{color:var(--green)}
+.nav-link.active{color:var(--green);background:var(--bg);box-shadow:var(--neu-out-sm)}
+.nav-cta {
+  padding: 10px 24px;
+  border-radius: 24px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--neu-light);
+  background: var(--green);
+  border: none;
+  cursor: pointer;
+  font-family: var(--font-body);
+  transition: var(--trans);
+  box-shadow: var(--neu-green);
+  letter-spacing: 0.01em;
+}
+.nav-cta:hover{background:var(--green-dk);transform:translateY(-1px);box-shadow:5px 5px 16px rgba(37,79,45,0.35),-2px -2px 8px #FFFFFF}
+
+/* ===== PAGE SHELL ===== */
+.page{position:relative;z-index:1}
+section{display:none;min-height:100vh;padding:90px 48px 80px;animation:secFade 0.5s ease}
+section.active{display:block}
+@keyframes secFade{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+
+/* ===== SECTION: LANDING ===== */
+#landing {
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  padding-top: 120px;
+}
+#landing.active{display:flex}
+
+.hero-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--bg);
+  box-shadow: var(--neu-out-sm);
+  border-radius: 20px;
+  padding: 7px 18px 7px 12px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--green);
+  margin-bottom: 32px;
+}
+.badge-dot{
+  width:8px;height:8px;border-radius:50%;
+  background:var(--gold);
+  box-shadow:0 0 0 3px rgba(199,168,107,0.25);
+  animation:badgePop 2.4s ease-in-out infinite;
+}
+@keyframes badgePop{0%,100%{box-shadow:0 0 0 2px rgba(199,168,107,0.2)}50%{box-shadow:0 0 0 6px rgba(199,168,107,0)}}
+
+.hero-headline {
+  font-family: var(--font-display);
+  font-size: clamp(52px, 8vw, 96px);
+  line-height: 1.02;
+  letter-spacing: -2px;
+  color: var(--text);
+  text-align: center;
+  margin-bottom: 24px;
+  max-width: 880px;
+}
+.hero-headline em{font-style:italic;color:var(--green)}
+.hero-headline .accent-word{
+  position:relative;
+  display:inline-block;
+  color:var(--green);
+}
+.hero-headline .accent-word::after{
+  content:'';
+  position:absolute;
+  bottom:-4px;left:0;right:0;
+  height:4px;
+  background:linear-gradient(90deg,var(--gold),var(--sage));
+  border-radius:2px;
+}
+
+.hero-sub {
+  font-size: 18px;
+  color: var(--text2);
+  text-align: center;
+  max-width: 540px;
+  line-height: 1.75;
+  margin-bottom: 44px;
+}
+
+.hero-btns{display:flex;gap:16px;flex-wrap:wrap;justify-content:center;margin-bottom:72px}
+
+.btn-neu {
+  padding: 14px 36px;
+  border-radius: 28px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  font-family: var(--font-body);
+  transition: var(--trans);
+  background: var(--bg);
+  color: var(--green);
+  box-shadow: var(--neu-out);
+  letter-spacing: 0.01em;
+}
+.btn-neu:hover{box-shadow:var(--neu-press);transform:translateY(1px)}
+.btn-neu:active{box-shadow:var(--neu-in);transform:translateY(2px)}
+.btn-primary-solid {
+  background: var(--green);
+  color: #fff;
+  box-shadow: var(--neu-green);
+}
+.btn-primary-solid:hover{background:var(--green-dk);transform:translateY(-2px);box-shadow:6px 6px 16px rgba(37,79,45,0.35),-2px -2px 8px #FFFFFF}
+.btn-primary-solid:active{transform:translateY(0);box-shadow:var(--neu-press)}
+
+/* ===== HERO VISUAL ===== */
+.hero-visual {
+  position: relative;
+  width: 340px;
+  height: 340px;
+  margin: 0 auto 72px;
+}
+.hero-orb {
+  width: 340px;
+  height: 340px;
+  border-radius: 50%;
+  background: var(--bg);
+  box-shadow: 12px 12px 30px var(--neu-dark), -8px -8px 20px var(--neu-light);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  animation: orbFloat 5s ease-in-out infinite;
+}
+@keyframes orbFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-12px)}}
+.orb-inner {
+  width: 220px;
+  height: 220px;
+  border-radius: 50%;
+  background: var(--bg3);
+  box-shadow: inset 6px 6px 16px var(--neu-dark), inset -4px -4px 12px var(--neu-light);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 6px;
+}
+.orb-text {
+  font-family: var(--font-display);
+  font-size: 28px;
+  color: var(--green);
+  letter-spacing: -0.5px;
+}
+.orb-sub{font-size:12px;color:var(--text3);letter-spacing:0.05em}
+
+/* Orbit chips */
+.orbit-chip {
+  position: absolute;
+  background: var(--bg);
+  border-radius: 20px;
+  padding: 8px 14px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--green);
+  box-shadow: var(--neu-out-sm);
+  white-space: nowrap;
+  animation: chipDrift 6s ease-in-out infinite alternate;
+}
+.chip1{top:0;left:50%;transform:translateX(-50%);animation-delay:0s}
+.chip2{top:50%;left:-20px;transform:translateY(-50%);animation-delay:-2s}
+.chip3{bottom:20px;right:-10px;animation-delay:-4s}
+.chip4{bottom:0;left:50%;transform:translateX(-50%);animation-delay:-1s}
+@keyframes chipDrift{0%{transform:translateY(0) translateX(0)}100%{transform:translateY(-8px) translateX(4px)}}
+.chip1{animation:c1float 5s ease-in-out infinite}
+.chip2{animation:c2float 6s ease-in-out infinite}
+.chip3{animation:c3float 4.5s ease-in-out infinite}
+.chip4{animation:c4float 7s ease-in-out infinite}
+@keyframes c1float{0%,100%{top:0px}50%{top:-10px}}
+@keyframes c2float{0%,100%{left:-20px}50%{left:-30px}}
+@keyframes c3float{0%,100%{bottom:20px}50%{bottom:12px}}
+@keyframes c4float{0%,100%{bottom:0px}50%{bottom:-10px}}
+
+/* ===== STATS BAR ===== */
+.stats-bar {
+  display: flex;
+  justify-content: center;
+  gap: 0;
+  max-width: 800px;
+  width: 100%;
+  margin: 0 auto;
+  background: var(--bg);
+  border-radius: 28px;
+  box-shadow: var(--neu-out);
+  overflow: hidden;
+}
+.stat-item {
+  flex: 1;
+  text-align: center;
+  padding: 28px 20px;
+  border-right: 1px solid var(--border);
+  transition: var(--trans);
+}
+.stat-item:last-child{border-right:none}
+.stat-item:hover{background:var(--bg3)}
+.stat-num {
+  font-family: var(--font-display);
+  font-size: 36px;
+  color: var(--green);
+  display: block;
+  line-height: 1;
+  margin-bottom: 6px;
+}
+.stat-label{font-size:12px;color:var(--text3);letter-spacing:0.05em;text-transform:uppercase;font-weight:500}
+
+/* ===== SECTION: FEATURES ===== */
+#features{display:none}
+#features.active{display:block}
+.sec-header{text-align:center;margin-bottom:64px}
+.sec-eyebrow {
+  display: inline-block;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--gold);
+  margin-bottom: 16px;
+  padding: 6px 16px;
+  border-radius: 12px;
+  background: var(--bg);
+  box-shadow: var(--neu-out-sm);
+}
+.sec-title {
+  font-family: var(--font-display);
+  font-size: clamp(36px, 5vw, 56px);
+  color: var(--text);
+  letter-spacing: -1px;
+  line-height: 1.08;
+  margin-bottom: 14px;
+}
+.sec-title span{color:var(--green)}
+.sec-sub{font-size:17px;color:var(--text2);max-width:480px;margin:0 auto;line-height:1.7}
+
+.feat-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 28px;
+  max-width: 960px;
+  margin: 0 auto;
+}
+
+.feat-card {
+  background: var(--bg);
+  border-radius: 28px;
+  padding: 40px 36px;
+  box-shadow: var(--neu-out);
+  position: relative;
+  overflow: hidden;
+  cursor: default;
+  transition: var(--trans);
+}
+.feat-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 28px;
+  background: linear-gradient(135deg, rgba(122,141,92,0.06), rgba(199,168,107,0.04));
+  opacity: 0;
+  transition: opacity 0.4s;
+}
+.feat-card:hover{box-shadow:8px 8px 20px var(--neu-dark),-4px -4px 12px var(--neu-light);transform:translateY(-4px)}
+.feat-card:hover::before{opacity:1}
+
+.feat-icon {
+  width: 64px;
+  height: 64px;
+  border-radius: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  margin-bottom: 22px;
+  box-shadow: var(--neu-out-sm);
+  background: var(--bg);
+  transition: var(--trans);
+}
+.feat-card:hover .feat-icon{box-shadow:var(--neu-press)}
+.feat-card h3 {
+  font-family: var(--font-display);
+  font-size: 22px;
+  color: var(--text);
+  margin-bottom: 10px;
+  letter-spacing: -0.3px;
+}
+.feat-card p{font-size:15px;color:var(--text2);line-height:1.7}
+.feat-tag {
+  display: inline-block;
+  margin-top: 20px;
+  padding: 5px 14px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  background: var(--bg3);
+  color: var(--olive);
+  box-shadow: var(--neu-out-sm);
+  letter-spacing: 0.03em;
+}
+
+/* ===== SECTION: DASHBOARD ===== */
+#dashboard{display:none;padding:0}
+#dashboard.active{display:block}
+.dash-layout {
+  height: 100vh;
+  display: flex;
+  padding-top: 70px;
+}
+
+.dash-sidebar {
+  width: 220px;
+  background: var(--bg2);
+  border-right: 1px solid var(--border);
+  padding: 28px 0;
+  flex-shrink: 0;
+  box-shadow: 4px 0 12px rgba(211,198,179,0.3);
+}
+.dash-logo {
+  padding: 0 22px 24px;
+  font-family: var(--font-display);
+  font-size: 19px;
+  color: var(--green);
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 20px;
+}
+.dash-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 22px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text2);
+  cursor: pointer;
+  transition: var(--trans-fast);
+  border-left: 3px solid transparent;
+  border-radius: 0 16px 16px 0;
+  margin: 1px 12px 1px 0;
+}
+.dash-nav-item:hover{color:var(--green);background:rgba(37,79,45,0.06)}
+.dash-nav-item.active{color:var(--green);border-left-color:var(--green);background:var(--bg);box-shadow:var(--neu-out-sm)}
+.dash-icon{font-size:16px}
+
+.dash-main {
+  flex: 1;
+  padding: 28px 32px;
+  overflow-y: auto;
+  background: var(--bg);
+}
+.dash-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 28px;
+}
+.dash-welcome h2 {
+  font-family: var(--font-display);
+  font-size: 24px;
+  color: var(--text);
+}
+.dash-welcome p{font-size:13px;color:var(--text3);margin-top:3px}
+.dash-actions{display:flex;align-items:center;gap:14px}
+.notif-btn {
+  position: relative;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--bg);
+  box-shadow: var(--neu-out-sm);
+  border: none;
+  cursor: pointer;
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: var(--trans);
+}
+.notif-btn:hover{box-shadow:var(--neu-press)}
+.notif-badge {
+  position: absolute;
+  top: -2px;right: -2px;
+  width: 14px;height: 14px;
+  background: var(--green);border-radius: 50%;
+  font-size: 8px;color: #fff;
+  display: flex;align-items: center;justify-content: center;
+  font-weight: 700;
+}
+.avatar {
+  width: 40px;height: 40px;border-radius: 50%;
+  background: var(--bg);
+  box-shadow: var(--neu-out-sm);
+  display: flex;align-items: center;justify-content: center;
+  font-size: 15px;font-weight: 700;
+  color: var(--green);cursor: pointer;
+  transition: var(--trans);
+}
+.avatar:hover{box-shadow:var(--neu-press)}
+
+.stat-cards {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 24px;
+}
+.stat-card {
+  background: var(--bg);
+  border-radius: 20px;
+  padding: 20px;
+  box-shadow: var(--neu-out-sm);
+  transition: var(--trans);
+  cursor: default;
+}
+.stat-card:hover{box-shadow:5px 5px 14px var(--neu-dark),-3px -3px 10px var(--neu-light);transform:translateY(-2px)}
+.sc-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+.sc-label{font-size:12px;color:var(--text3);font-weight:500;letter-spacing:0.04em;text-transform:uppercase}
+.sc-ico{font-size:20px}
+.sc-val {
+  font-family: var(--font-display);
+  font-size: 28px;
+  color: var(--green);
+  line-height: 1;
+  margin-bottom: 6px;
+}
+.sc-change{font-size:12px;color:var(--success);font-weight:500}
+
+.dash-grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+.dash-panel {
+  background: var(--bg);
+  border-radius: 20px;
+  padding: 22px;
+  box-shadow: var(--neu-out-sm);
+}
+.panel-title {
+  font-family: var(--font-display);
+  font-size: 16px;
+  color: var(--text);
+  margin-bottom: 18px;
+}
+.lang-row{margin-bottom:14px}
+.lang-info{display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px}
+.lang-name{color:var(--text2);font-weight:500}
+.lang-pct{color:var(--green);font-weight:600}
+.lang-bar-bg {
+  height: 7px;
+  background: var(--bg2);
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow: var(--neu-in);
+}
+.lang-bar {
+  height: 100%;
+  border-radius: 4px;
+  animation: barGrow 1.2s ease forwards;
+}
+@keyframes barGrow{from{width:0}}
+.lb1{background:linear-gradient(90deg,var(--green),var(--sage))}
+.lb2{background:linear-gradient(90deg,var(--sage),var(--sage-lt))}
+.lb3{background:linear-gradient(90deg,var(--gold),var(--gold-lt))}
+.lb4{background:linear-gradient(90deg,var(--olive),var(--sage-lt))}
+.lb5{background:linear-gradient(90deg,var(--green-dk),var(--green))}
+
+.conv-item{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)}
 .conv-item:last-child{border-bottom:none}
-.conv-avatar { width:36px; height:36px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:600; flex-shrink:0; }
-.ca1{background:rgba(108,59,245,0.25)}.ca2{background:rgba(0,212,255,0.2)}.ca3{background:rgba(236,72,153,0.2)}.ca4{background:rgba(52,211,153,0.2)}
+.conv-av {
+  width:34px;height:34px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-size:13px;font-weight:700;flex-shrink:0;
+  background:var(--bg);box-shadow:var(--neu-out-sm);
+  color:var(--green);
+}
 .conv-info{flex:1}
-.conv-name{font-size:14px;font-weight:500}
-.conv-preview{font-size:12px;color:rgba(255,255,255,0.4);margin-top:2px}
-.conv-badge{padding:3px 10px;border-radius:12px;font-size:11px;font-weight:500}
-.cb-ta{background:rgba(52,211,153,0.15);color:#34d399}.cb-hi{background:rgba(108,59,245,0.15);color:var(--purple-light)}.cb-en{background:rgba(0,212,255,0.12);color:var(--cyan)}.cb-ml{background:rgba(236,72,153,0.12);color:#ec4899}
-.fab { position:fixed; bottom:36px; right:36px; width:60px; height:60px; border-radius:50%; background:linear-gradient(135deg,#6C3BF5,#00D4FF); border:none; cursor:pointer; font-size:26px; display:flex; align-items:center; justify-content:center; box-shadow:0 0 30px rgba(108,59,245,0.5); animation:fabPulse 2.5s ease-in-out infinite; z-index:999; transition:transform 0.2s; }
-.fab:hover{transform:scale(1.1)}
-@keyframes fabPulse{0%,100%{box-shadow:0 0 30px rgba(108,59,245,0.5)}50%{box-shadow:0 0 60px rgba(108,59,245,0.8),0 0 100px rgba(0,212,255,0.3)}}
-#chat { display:block; min-height:100vh; padding:100px 0 0; }
-.chat-layout { height:calc(100vh - 100px); display:flex; flex-direction:column; }
-.chat-topbar { display:flex; align-items:center; justify-content:space-between; padding:16px 32px; background:rgba(0,0,0,0.3); border-bottom:1px solid rgba(255,255,255,0.05); backdrop-filter:blur(20px); }
-.mode-selector { display:flex; gap:8px; }
-.mode-btn { padding:7px 18px; border-radius:20px; font-size:13px; font-weight:500; cursor:pointer; border:1px solid rgba(255,255,255,0.08); background:transparent; color:rgba(255,255,255,0.5); transition:all 0.2s; font-family:'Inter',sans-serif; }
-.mode-btn.active { background:linear-gradient(135deg,#6C3BF5,#00D4FF); border-color:transparent; color:#fff; }
-.lang-indicator { display:flex; align-items:center; gap:10px; font-size:13px; color:rgba(255,255,255,0.6); }
-.lang-orb { width:10px; height:10px; border-radius:50%; background:var(--cyan); animation:langOrb 2s ease-in-out infinite; }
-@keyframes langOrb{0%,100%{box-shadow:0 0 0 0 rgba(0,212,255,0.5)}50%{box-shadow:0 0 0 6px rgba(0,212,255,0)}}
-.chat-messages { flex:1; overflow-y:auto; padding:24px 40px; display:flex; flex-direction:column; gap:20px; }
-.chat-messages::-webkit-scrollbar{width:4px}
-.chat-messages::-webkit-scrollbar-track{background:transparent}
-.chat-messages::-webkit-scrollbar-thumb{background:rgba(108,59,245,0.3);border-radius:2px}
-.msg { display:flex; gap:12px; max-width:70%; animation:msgSlide 0.4s ease; }
-@keyframes msgSlide{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
-.msg.user { align-self:flex-end; flex-direction:row-reverse; }
-.msg-avatar { width:36px; height:36px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:16px; flex-shrink:0; background:rgba(108,59,245,0.2); }
-.msg-bubble { padding:14px 18px; border-radius:18px; font-size:14px; line-height:1.6; }
-.msg.ai .msg-bubble { background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.07); border-radius:4px 18px 18px 18px; color:rgba(255,255,255,0.85); }
-.msg.user .msg-bubble { background:linear-gradient(135deg,#6C3BF5,#5b21b6); border-radius:18px 4px 18px 18px; color:#fff; }
-.msg-lang { font-size:11px; margin-top:6px; color:rgba(255,255,255,0.35); }
-.typing-bubble { display:flex; align-items:center; gap:6px; padding:14px 18px; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.07); border-radius:4px 18px 18px 18px; }
-.t-dot { width:8px; height:8px; border-radius:50%; background:var(--purple-light); animation:tDot 1.2s ease-in-out infinite; }
-.t-dot:nth-child(2){animation-delay:0.2s}.t-dot:nth-child(3){animation-delay:0.4s}
-@keyframes tDot{0%,80%,100%{transform:scale(0.6);opacity:0.3}40%{transform:scale(1);opacity:1}}
-.chat-input-area { padding:20px 32px; background:rgba(0,0,0,0.3); border-top:1px solid rgba(255,255,255,0.05); display:flex; align-items:center; gap:12px; position:relative; }
-.chat-input-box { flex:1; background:rgba(255,255,255,0.04); border:1px solid rgba(108,59,245,0.3); border-radius:28px; padding:14px 22px; color:#fff; font-size:14px; font-family:'Inter',sans-serif; outline:none; transition:border 0.2s; }
-.chat-input-box:focus { border-color:#6C3BF5; box-shadow:0 0 0 3px rgba(108,59,245,0.1); }
-.chat-input-box::placeholder{color:rgba(255,255,255,0.25)}
-.send-btn { width:46px; height:46px; border-radius:50%; background:linear-gradient(135deg,#6C3BF5,#00D4FF); border:none; color:#fff; font-size:18px; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all 0.2s; box-shadow:0 0 20px rgba(108,59,245,0.4); }
-.send-btn:hover { transform:scale(1.1); box-shadow:0 0 35px rgba(108,59,245,0.6); }
+.conv-name{font-size:13px;font-weight:600;color:var(--text)}
+.conv-preview{font-size:11px;color:var(--text3);margin-top:1px}
+.conv-badge {
+  padding:3px 10px;border-radius:10px;
+  font-size:11px;font-weight:600;
+  background:var(--bg3);color:var(--green);
+  box-shadow:var(--neu-out-sm);
+}
 
-.mic-btn { width:46px; height:46px; border-radius:50%; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); color:#fff; font-size:20px; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all 0.2s; position:relative; z-index:2; flex-shrink:0; }
-.mic-btn:hover { background:rgba(108,59,245,0.2); border-color:rgba(108,59,245,0.4); }
-.mic-btn.jarvis-active { background:rgba(108,59,245,0.3); border-color:rgba(108,59,245,0.8); box-shadow:0 0 0 0 rgba(108,59,245,0.6); animation:jarvisMicPulse 0.8s ease-in-out infinite; }
-@keyframes jarvisMicPulse { 0%{box-shadow:0 0 0 0 rgba(108,59,245,0.7),0 0 0 0 rgba(0,212,255,0.4)} 70%{box-shadow:0 0 0 14px rgba(108,59,245,0),0 0 0 26px rgba(0,212,255,0)} 100%{box-shadow:0 0 0 0 rgba(108,59,245,0),0 0 0 0 rgba(0,212,255,0)} }
+.fab {
+  position: fixed;
+  bottom: 32px;
+  right: 32px;
+  width: 56px;height: 56px;
+  border-radius: 50%;
+  background: var(--green);
+  border: none;
+  cursor: pointer;
+  font-size: 22px;
+  display: flex;
+  align-items: center;justify-content: center;
+  box-shadow: var(--neu-green);
+  z-index: 999;
+  transition: var(--trans);
+  animation: fabPop 2.5s ease-in-out infinite;
+}
+.fab:hover{transform:scale(1.1);box-shadow:6px 6px 18px rgba(37,79,45,0.4),-2px -2px 8px #FFFFFF}
+@keyframes fabPop{0%,100%{box-shadow:var(--neu-green)}50%{box-shadow:6px 6px 20px rgba(37,79,45,0.4),-2px -2px 10px #FFFFFF}}
 
-#jarvis-overlay { display:none; position:fixed; inset:0; z-index:9999; background:rgba(8,7,20,0.92); backdrop-filter:blur(12px); flex-direction:column; align-items:center; justify-content:center; gap:20px; }
-#jarvis-overlay.active { display:flex; }
-.jarvis-ring-wrap { position:relative; width:280px; height:280px; display:flex; align-items:center; justify-content:center; }
-.jarvis-ring { position:absolute; border-radius:50%; border-style:solid; border-color:transparent; animation-timing-function:linear; animation-iteration-count:infinite; }
-.jr1 { width:280px; height:280px; border-width:2px; border-top-color:rgba(108,59,245,0.9); border-right-color:rgba(108,59,245,0.2); animation:jarvisSpin1 1.4s linear infinite; }
-.jr2 { width:240px; height:240px; border-width:1.5px; border-top-color:rgba(0,212,255,0.8); border-left-color:rgba(0,212,255,0.2); animation:jarvisSpin2 2s linear infinite; }
-.jr3 { width:200px; height:200px; border-width:1px; border-top-color:rgba(167,139,250,0.7); border-right-color:rgba(167,139,250,0.15); animation:jarvisSpin1 2.8s linear infinite reverse; }
-.jr4 { width:160px; height:160px; border-width:1.5px; border-top-color:rgba(0,212,255,0.5); border-left-color:rgba(0,212,255,0.1); animation:jarvisSpin2 1.8s linear infinite; }
-@keyframes jarvisSpin1 { to{transform:rotate(360deg)} }
-@keyframes jarvisSpin2 { to{transform:rotate(-360deg)} }
-.jarvis-core { position:relative; z-index:2; width:90px; height:90px; border-radius:50%; background:radial-gradient(circle, rgba(108,59,245,0.4) 0%, rgba(0,212,255,0.15) 60%, transparent 100%); display:flex; align-items:center; justify-content:center; font-size:36px; animation:jarvisCorePulse 1.2s ease-in-out infinite; }
-@keyframes jarvisCorePulse { 0%,100%{transform:scale(1);filter:brightness(1)} 50%{transform:scale(1.08);filter:brightness(1.4)} }
-.jarvis-wave-bars { display:flex; align-items:center; gap:5px; height:50px; }
-.jarvis-bar { width:5px; border-radius:3px; background:linear-gradient(to top,#6C3BF5,#00D4FF); animation:jarvisBarAnim 0.6s ease-in-out infinite alternate; transform-origin:bottom; }
-.jarvis-bar:nth-child(1){height:12px;animation-delay:0s}
-.jarvis-bar:nth-child(2){height:26px;animation-delay:0.08s}
-.jarvis-bar:nth-child(3){height:40px;animation-delay:0.16s}
-.jarvis-bar:nth-child(4){height:50px;animation-delay:0.24s}
-.jarvis-bar:nth-child(5){height:38px;animation-delay:0.32s}
-.jarvis-bar:nth-child(6){height:46px;animation-delay:0.40s}
-.jarvis-bar:nth-child(7){height:30px;animation-delay:0.48s}
-.jarvis-bar:nth-child(8){height:18px;animation-delay:0.56s}
-@keyframes jarvisBarAnim { from{transform:scaleY(0.3);opacity:0.4} to{transform:scaleY(1);opacity:1} }
-.jarvis-bar.idle { animation:none; transform:scaleY(0.25); opacity:0.3; }
-.jarvis-status-text { font-family:'Space Grotesk',sans-serif; font-size:22px; font-weight:600; background:linear-gradient(135deg,#a78bfa,#00D4FF); -webkit-background-clip:text; -webkit-text-fill-color:transparent; letter-spacing:0.5px; text-align:center; }
-.jarvis-sub-text { font-size:14px; color:rgba(255,255,255,0.4); text-align:center; margin-top:-20px; }
-.jarvis-close-btn { padding:10px 28px; border-radius:24px; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); color:rgba(255,255,255,0.55); font-size:14px; cursor:pointer; font-family:'Inter',sans-serif; transition:all 0.2s; }
-.jarvis-close-btn:hover { background:rgba(255,255,255,0.1); color:#fff; }
-#jarvis-send-btn { background:linear-gradient(135deg,#6C3BF5,#00D4FF) !important; color:#fff !important; border:none !important; display:none; }
-#jarvis-send-btn:hover { transform:scale(1.05); }
-.jr-dot { position:absolute; width:8px; height:8px; border-radius:50%; top:50%; left:50%; transform-origin:0 0; }
-.jr-dot-1 { background:#6C3BF5; animation:jarvisDotOrbit1 1.4s linear infinite; }
-.jr-dot-2 { background:#00D4FF; animation:jarvisDotOrbit2 2s linear infinite; }
-@keyframes jarvisDotOrbit1 { 0%   { transform:rotate(0deg)   translateX(136px) translateY(-4px); } 100% { transform:rotate(360deg) translateX(136px) translateY(-4px); } }
-@keyframes jarvisDotOrbit2 { 0%   { transform:rotate(0deg)   translateX(116px) translateY(-4px); } 100% { transform:rotate(-360deg) translateX(116px) translateY(-4px); } }
+/* ===== SECTION: CHAT ===== */
+#chat{display:none;padding:0}
+#chat.active{display:block}
+.chat-layout {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  padding-top: 70px;
+}
+.chat-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 32px;
+  background: var(--bg2);
+  border-bottom: 1px solid var(--border);
+}
+.mode-selector{display:flex;gap:8px}
+.mode-btn {
+  padding: 7px 18px;
+  border-radius: 18px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  background: var(--bg);
+  box-shadow: var(--neu-out-sm);
+  color: var(--text2);
+  border: none;
+  font-family: var(--font-body);
+  transition: var(--trans);
+}
+.mode-btn:hover{color:var(--green)}
+.mode-btn.active{background:var(--bg);box-shadow:var(--neu-press);color:var(--green);font-weight:600}
+.lang-indicator{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text2)}
+.lang-orb {
+  width:9px;height:9px;border-radius:50%;
+  background:var(--sage);
+  box-shadow:0 0 0 3px rgba(122,141,92,0.2);
+  animation:langPop 2s ease-in-out infinite;
+}
+@keyframes langPop{0%,100%{box-shadow:0 0 0 2px rgba(122,141,92,0.15)}50%{box-shadow:0 0 0 6px rgba(122,141,92,0)}}
 
-#footer-sec { display:block; min-height:auto; padding:0; }
-.footer-glow-line { height:1px; background:linear-gradient(90deg,transparent,#6C3BF5,#00D4FF,transparent); }
-.footer-body { background:rgba(0,0,0,0.4); padding:60px 60px 40px; }
-.footer-top { display:grid; grid-template-columns:2fr 1fr 1fr 1fr; gap:40px; margin-bottom:50px; }
-.footer-logo { font-family:'Space Grotesk',sans-serif; font-size:24px; font-weight:700; background:linear-gradient(135deg,#6C3BF5,#00D4FF); -webkit-background-clip:text; -webkit-text-fill-color:transparent; margin-bottom:14px; }
-.footer-brand p { font-size:14px; color:rgba(255,255,255,0.4); line-height:1.7; max-width:280px; margin-bottom:20px; }
-.footer-socials { display:flex; gap:10px; }
-.social-btn { width:38px; height:38px; border-radius:50%; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); display:flex; align-items:center; justify-content:center; font-size:16px; cursor:pointer; transition:all 0.2s; text-decoration:none; }
-.social-btn:hover { background:rgba(108,59,245,0.2); border-color:rgba(108,59,245,0.4); }
-.footer-col h4 { font-size:14px; font-weight:600; margin-bottom:20px; color:rgba(255,255,255,0.7); }
-.footer-col a { display:block; font-size:14px; color:rgba(255,255,255,0.4); text-decoration:none; margin-bottom:12px; transition:color 0.2s; }
-.footer-col a:hover { color:var(--cyan); }
-.footer-bottom { display:flex; align-items:center; justify-content:space-between; padding-top:30px; border-top:1px solid rgba(255,255,255,0.05); flex-wrap:wrap; gap:16px; }
-.footer-copy { font-size:13px; color:rgba(255,255,255,0.3); }
-.powered-badge { display:inline-flex; align-items:center; gap:8px; background:rgba(108,59,245,0.1); border:1px solid rgba(108,59,245,0.25); border-radius:20px; padding:8px 20px; font-size:13px; color:rgba(255,255,255,0.5); }
-.powered-badge strong { color:var(--purple-light); }
-.section-transition { animation:secIn 0.5s ease; }
-@keyframes secIn{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+.chat-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  background: var(--bg);
+}
+.chat-messages::-webkit-scrollbar{width:5px}
+.chat-messages::-webkit-scrollbar-track{background:var(--bg2)}
+.chat-messages::-webkit-scrollbar-thumb{background:var(--sage-lt);border-radius:3px}
+
+.msg{display:flex;gap:10px;max-width:72%;animation:msgIn 0.35s ease}
+@keyframes msgIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+.msg.user{align-self:flex-end;flex-direction:row-reverse}
+.msg-av {
+  width:34px;height:34px;border-radius:50%;flex-shrink:0;
+  background:var(--bg);box-shadow:var(--neu-out-sm);
+  display:flex;align-items:center;justify-content:center;font-size:15px;
+}
+.msg-bubble {
+  padding:13px 17px;
+  border-radius:18px;
+  font-size:14px;
+  line-height:1.65;
+  color:var(--text);
+}
+.msg.ai .msg-bubble {
+  background:var(--bg);
+  box-shadow:var(--neu-out-sm);
+  border-radius:4px 18px 18px 18px;
+}
+.msg.user .msg-bubble {
+  background:var(--green);
+  color:#fff;
+  border-radius:18px 4px 18px 18px;
+  box-shadow:var(--neu-green);
+}
+.msg-lang{font-size:11px;color:var(--text3);margin-top:5px;padding-left:4px}
+
+/* Typing indicator */
+.typing-wrap{display:flex;gap:10px}
+.typing-bubble {
+  display:flex;align-items:center;gap:6px;
+  padding:13px 18px;
+  background:var(--bg);
+  box-shadow:var(--neu-out-sm);
+  border-radius:4px 18px 18px 18px;
+}
+.t-dot {
+  width:7px;height:7px;border-radius:50%;
+  background:var(--sage);
+  animation:tBounce 1.1s ease-in-out infinite;
+}
+.t-dot:nth-child(2){animation-delay:0.18s}
+.t-dot:nth-child(3){animation-delay:0.36s}
+@keyframes tBounce{0%,80%,100%{transform:scale(0.5);opacity:0.3}40%{transform:scale(1);opacity:1}}
+
+.chat-input-area {
+  padding: 16px 28px;
+  background: var(--bg2);
+  border-top: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.chat-input-box {
+  flex: 1;
+  background: var(--bg);
+  box-shadow: var(--neu-in);
+  border: 1px solid var(--border);
+  border-radius: 26px;
+  padding: 12px 22px;
+  color: var(--text);
+  font-size: 14px;
+  font-family: var(--font-body);
+  outline: none;
+  transition: var(--trans);
+}
+.chat-input-box:focus{box-shadow:inset 4px 4px 10px #C8BB9F,inset -3px -3px 8px #FFFFFF,0 0 0 2px rgba(122,141,92,0.35);border-color:var(--sage)}
+.chat-input-box::placeholder{color:var(--textd)}
+.send-btn,.mic-btn {
+  width: 44px;height: 44px;border-radius: 50%;
+  border: none;cursor: pointer;
+  display: flex;align-items: center;justify-content: center;
+  font-size: 18px;
+  transition: var(--trans);
+}
+.send-btn {
+  background:var(--green);color:#fff;
+  box-shadow:var(--neu-green);
+}
+.send-btn:hover{transform:scale(1.08);background:var(--green-dk)}
+.send-btn:active{transform:scale(0.96);box-shadow:var(--neu-press)}
+.mic-btn {
+  background:var(--bg);color:var(--green);
+  box-shadow:var(--neu-out-sm);
+}
+.mic-btn:hover{box-shadow:var(--neu-out);color:var(--sage)}
+.mic-btn:active,.mic-btn.jarvis-active {
+  box-shadow:var(--neu-press);
+  background:var(--bg3);
+  color:var(--green);
+  animation:micActive 1s ease-in-out infinite;
+}
+@keyframes micActive{0%,100%{box-shadow:var(--neu-press)}50%{box-shadow:3px 3px 10px rgba(37,79,45,0.3),-2px -2px 8px #FFFFFF}}
+
+/* ===== JARVIS OVERLAY ===== */
+#jarvis-overlay {
+  display:none;
+  position:fixed;inset:0;z-index:9999;
+  background:rgba(244,235,221,0.88);
+  backdrop-filter:blur(20px);
+  -webkit-backdrop-filter:blur(20px);
+  flex-direction:column;align-items:center;justify-content:center;gap:22px;
+}
+#jarvis-overlay.active{display:flex}
+
+.jarvis-ring-wrap{position:relative;width:260px;height:260px;display:flex;align-items:center;justify-content:center}
+.jarvis-ring {
+  position:absolute;border-radius:50%;
+  border-style:solid;border-color:transparent;
+  animation-timing-function:linear;animation-iteration-count:infinite;
+}
+.jr1{width:260px;height:260px;border-width:2px;border-top-color:rgba(37,79,45,0.7);border-right-color:rgba(37,79,45,0.12);animation:jspin 1.5s linear infinite}
+.jr2{width:220px;height:220px;border-width:1.5px;border-top-color:rgba(199,168,107,0.8);border-left-color:rgba(199,168,107,0.15);animation:jspin2 2.2s linear infinite}
+.jr3{width:182px;height:182px;border-width:1px;border-top-color:rgba(122,141,92,0.6);border-right-color:rgba(122,141,92,0.1);animation:jspin 3s linear infinite reverse}
+.jr4{width:146px;height:146px;border-width:1.5px;border-top-color:rgba(37,79,45,0.4);border-left-color:rgba(37,79,45,0.06);animation:jspin2 1.9s linear infinite}
+@keyframes jspin{to{transform:rotate(360deg)}}
+@keyframes jspin2{to{transform:rotate(-360deg)}}
+.jarvis-core {
+  position:relative;z-index:2;
+  width:80px;height:80px;border-radius:50%;
+  background:var(--bg);
+  box-shadow:var(--neu-out-sm);
+  display:flex;align-items:center;justify-content:center;
+  font-size:32px;
+  animation:corePulse 1.4s ease-in-out infinite;
+}
+@keyframes corePulse{0%,100%{box-shadow:var(--neu-out-sm)}50%{box-shadow:5px 5px 14px rgba(37,79,45,0.2),-2px -2px 8px #FFFFFF}}
+
+.jarvis-bars{display:flex;align-items:center;gap:5px;height:48px}
+.jbar{
+  width:5px;border-radius:3px;
+  background:linear-gradient(to top,var(--green),var(--sage));
+  animation:jbarAnim 0.55s ease-in-out infinite alternate;
+  transform-origin:bottom;
+}
+.jbar:nth-child(1){height:10px;animation-delay:0s}.jbar:nth-child(2){height:24px;animation-delay:.08s}.jbar:nth-child(3){height:38px;animation-delay:.16s}.jbar:nth-child(4){height:48px;animation-delay:.24s}.jbar:nth-child(5){height:36px;animation-delay:.32s}.jbar:nth-child(6){height:44px;animation-delay:.40s}.jbar:nth-child(7){height:28px;animation-delay:.48s}.jbar:nth-child(8){height:14px;animation-delay:.56s}
+@keyframes jbarAnim{from{transform:scaleY(0.25);opacity:0.35}to{transform:scaleY(1);opacity:1}}
+.jbar.idle{animation:none;transform:scaleY(0.2);opacity:0.25}
+
+.jarvis-status {
+  font-family:var(--font-display);font-size:22px;
+  color:var(--green);text-align:center;
+}
+.jarvis-sub{font-size:14px;color:var(--text3);text-align:center;margin-top:-14px}
+.jarvis-btns{display:flex;gap:12px;margin-top:6px}
+.jarvis-close-btn {
+  padding:9px 24px;border-radius:22px;
+  background:var(--bg);box-shadow:var(--neu-out-sm);
+  border:none;color:var(--text2);font-size:13px;font-weight:500;
+  cursor:pointer;font-family:var(--font-body);
+  transition:var(--trans);
+}
+.jarvis-close-btn:hover{box-shadow:var(--neu-press);color:var(--green)}
+#jarvis-send-btn{display:none;background:var(--green);color:#fff;box-shadow:var(--neu-green)}
+#jarvis-send-btn:hover{background:var(--green-dk)}
+
+/* ===== SECTION: FOOTER ===== */
+#footer-sec{display:none;min-height:auto;padding:0}
+#footer-sec.active{display:block}
+.footer-glow{height:3px;background:linear-gradient(90deg,transparent,var(--green),var(--gold),transparent)}
+.footer-body{background:var(--bg2);padding:60px 48px 40px}
+.footer-top{display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:40px;margin-bottom:50px}
+.footer-logo {
+  font-family:var(--font-display);font-size:22px;
+  color:var(--green);margin-bottom:14px;display:block;
+}
+.footer-brand p{font-size:14px;color:var(--text2);line-height:1.7;max-width:260px;margin-bottom:20px}
+.footer-socials{display:flex;gap:10px}
+.social-btn {
+  width:36px;height:36px;border-radius:50%;
+  background:var(--bg);box-shadow:var(--neu-out-sm);
+  display:flex;align-items:center;justify-content:center;
+  font-size:14px;cursor:pointer;
+  border:none;color:var(--text2);
+  transition:var(--trans);text-decoration:none;
+}
+.social-btn:hover{box-shadow:var(--neu-press);color:var(--green)}
+.footer-col h4{font-size:13px;font-weight:600;color:var(--green);margin-bottom:18px;letter-spacing:0.05em;text-transform:uppercase}
+.footer-col a{display:block;font-size:14px;color:var(--text2);text-decoration:none;margin-bottom:11px;transition:color 0.2s}
+.footer-col a:hover{color:var(--green)}
+.footer-bottom{display:flex;align-items:center;justify-content:space-between;padding-top:28px;border-top:1px solid var(--border);flex-wrap:wrap;gap:14px}
+.footer-copy{font-size:13px;color:var(--text3)}
+.powered-badge {
+  display:inline-flex;align-items:center;gap:8px;
+  background:var(--bg);box-shadow:var(--neu-out-sm);
+  border-radius:18px;padding:7px 18px;
+  font-size:13px;color:var(--text2);
+}
+.powered-badge strong{color:var(--green);font-weight:700}
+
+/* ===== RESPONSIVE ===== */
+@media(max-width:768px){
+  nav{padding:0 20px}
+  .nav-links{gap:2px}
+  .nav-link{padding:6px 12px;font-size:13px}
+  section{padding:80px 20px 60px}
+  .hero-headline{font-size:42px;letter-spacing:-1px}
+  .feat-grid,.stat-cards,.dash-grid-2{grid-template-columns:1fr}
+  .dash-layout{flex-direction:column}
+  .dash-sidebar{width:100%;padding:12px 0;display:flex;overflow-x:auto;border-right:none;border-bottom:1px solid var(--border)}
+  .dash-main{padding:16px}
+  .footer-top{grid-template-columns:1fr 1fr}
+  .stats-bar{flex-direction:column;border-radius:20px}
+  .stat-item{border-right:none;border-bottom:1px solid var(--border)}
+  .stat-item:last-child{border-bottom:none}
+  .hero-visual{width:260px;height:260px}
+  .hero-orb{width:260px;height:260px}
+  .orb-inner{width:170px;height:170px}
+}
+
+/* ===== SCROLLBAR ===== */
 ::-webkit-scrollbar{width:6px}
-::-webkit-scrollbar-track{background:var(--bg)}
-::-webkit-scrollbar-thumb{background:rgba(108,59,245,0.4);border-radius:3px}
+::-webkit-scrollbar-track{background:var(--bg2)}
+::-webkit-scrollbar-thumb{background:var(--sage-lt);border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:var(--sage)}
+
+/* ===== SMOOTH MICRO-INTERACTIONS ===== */
+@media(prefers-reduced-motion:reduce){
+  *{animation-duration:0.01ms!important;transition-duration:0.01ms!important}
+}
 </style>
 </head>
 <body>
-<canvas id="bg-canvas"></canvas>
 
+<!-- Ambient background blobs -->
+<div class="ambient">
+  <div class="amb-blob"></div>
+  <div class="amb-blob"></div>
+  <div class="amb-blob"></div>
+</div>
+
+<!-- JARVIS OVERLAY -->
 <div id="jarvis-overlay">
   <div class="jarvis-ring-wrap">
-    <div class="jarvis-ring jr1"></div><div class="jarvis-ring jr2"></div><div class="jarvis-ring jr3"></div><div class="jarvis-ring jr4"></div>
-    <div class="jr-dot jr-dot-1"></div><div class="jr-dot jr-dot-2"></div>
+    <div class="jarvis-ring jr1"></div>
+    <div class="jarvis-ring jr2"></div>
+    <div class="jarvis-ring jr3"></div>
+    <div class="jarvis-ring jr4"></div>
     <div class="jarvis-core" id="jarvis-core-icon">🎙️</div>
   </div>
-  <div class="jarvis-wave-bars" id="jarvis-bars">
-    <div class="jarvis-bar idle"></div><div class="jarvis-bar idle"></div><div class="jarvis-bar idle"></div><div class="jarvis-bar idle"></div>
-    <div class="jarvis-bar idle"></div><div class="jarvis-bar idle"></div><div class="jarvis-bar idle"></div><div class="jarvis-bar idle"></div>
+  <div class="jarvis-bars" id="jarvis-bars">
+    <div class="jbar idle"></div><div class="jbar idle"></div><div class="jbar idle"></div><div class="jbar idle"></div>
+    <div class="jbar idle"></div><div class="jbar idle"></div><div class="jbar idle"></div><div class="jbar idle"></div>
   </div>
-  <div class="jarvis-status-text" id="jarvis-status">Initializing...</div>
-  <div class="jarvis-sub-text" id="jarvis-sub">Tamil · Hindi · English supported</div>
-  <div style="display:flex; gap:12px; margin-top:8px;">
+  <div class="jarvis-status" id="jarvis-status">Initializing...</div>
+  <div class="jarvis-sub" id="jarvis-sub">Tamil · Hindi · English supported</div>
+  <div class="jarvis-btns">
     <button class="jarvis-close-btn" id="jarvis-send-btn">📤 Send</button>
     <button class="jarvis-close-btn" onclick="cancelJarvis()">✕ End Conversation</button>
   </div>
 </div>
 
+<!-- NAV -->
 <nav>
-  <div class="nav-logo">⚡ Samvad AI</div>
+  <div class="nav-logo" onclick="showSection('landing')">
+    <div class="logo-orb">⚡</div>
+    Samvad AI
+  </div>
   <div class="nav-links">
-    <a onclick="showSection('landing')" class="active" id="nav-landing">Home</a>
-    <a onclick="showSection('features')" id="nav-features">Features</a>
-    <a onclick="showSection('dashboard')" id="nav-dashboard">Dashboard</a>
-    <a onclick="showSection('chat')" id="nav-chat">Chat</a>
-    <a onclick="showSection('footer-sec')" id="nav-footer-sec">About</a>
-    <a onclick="showSection('chat')" class="nav-cta">Start Free →</a>
+    <button class="nav-link active" id="nav-landing" onclick="showSection('landing')">Home</button>
+    <button class="nav-link" id="nav-features" onclick="showSection('features')">Features</button>
+    <button class="nav-link" id="nav-dashboard" onclick="showSection('dashboard')">Dashboard</button>
+    <button class="nav-link" id="nav-chat" onclick="showSection('chat')">Chat</button>
+    <button class="nav-link" id="nav-footer-sec" onclick="showSection('footer-sec')">About</button>
+    <button class="nav-cta" onclick="showSection('chat')">Start Free →</button>
   </div>
 </nav>
 
 <div class="page">
+
+<!-- LANDING -->
 <section id="landing" class="active">
-  <div class="hero-left">
-    <div class="hero-badge"><span class="badge-dot"></span> Now live in India 🇮🇳 · FlowZint AI Hackathon 2026</div>
-    <h1 class="hero-title"><span class="grad">Samvad AI</span><br>Talk to the<br>Future.</h1>
-    <p class="hero-tagline">AI-Powered Business Communication for India.<br>Multi-language · Real-time · Intelligent · Built for Bharat.</p>
-    <div class="hero-btns">
-      <button class="btn-primary" onclick="showSection('chat')">Start Chatting 🚀</button>
-      <button class="btn-ghost" onclick="showSection('features')">See Features</button>
-    </div>
+  <div class="hero-badge">
+    <span class="badge-dot"></span>
+    Now live in India 🇮🇳 · FlowZint AI Hackathon 2026
   </div>
-  <div class="hero-right">
-    <div class="sphere-canvas-wrap">
-      <canvas id="hero-canvas"></canvas>
-      <div class="sphere-label"><span>Samvad</span><span style="font-size:14px;color:rgba(255,255,255,0.5);font-family:'Inter';font-weight:400;margin-top:4px;">AI Platform</span></div>
-      <div class="orbit-wrap">
-        <div class="orbit-icon o1">💬</div><div class="orbit-icon o2">🎙️</div><div class="orbit-icon o3">🌐</div><div class="orbit-icon o4">🤖</div>
+
+  <h1 class="hero-headline">
+    <em>Samvad AI —</em><br>
+    Talk to the <span class="accent-word">Future</span><br>
+    of Business
+  </h1>
+
+  <p class="hero-sub">
+    AI-Powered Communication for Bharat. Multi-language, real-time, intelligent conversations — built for India.
+  </p>
+
+  <div class="hero-btns">
+    <button class="btn-primary-solid" onclick="showSection('chat')">Start Chatting 🚀</button>
+    <button class="btn-neu" onclick="showSection('features')">Explore Features</button>
+  </div>
+
+  <!-- Hero sphere visual -->
+  <div class="hero-visual">
+    <div class="hero-orb">
+      <div class="orb-inner">
+        <div class="orb-text">Samvad</div>
+        <div class="orb-sub">AI Platform</div>
       </div>
     </div>
+    <div class="orbit-chip chip1">🌐 Tamil</div>
+    <div class="orbit-chip chip2">🎙️ Voice</div>
+    <div class="orbit-chip chip3">🤖 AI</div>
+    <div class="orbit-chip chip4">⚡ Real-time</div>
+  </div>
+
+  <!-- Stats bar -->
+  <div class="stats-bar">
+    <div class="stat-item">
+      <span class="stat-num" id="stat-convos">1M+</span>
+      <div class="stat-label">Conversations</div>
+    </div>
+    <div class="stat-item">
+      <span class="stat-num">99%</span>
+      <div class="stat-label">Uptime</div>
+    </div>
+    <div class="stat-item">
+      <span class="stat-num">6+</span>
+      <div class="stat-label">Languages</div>
+    </div>
+    <div class="stat-item">
+      <span class="stat-num">500+</span>
+      <div class="stat-label">Businesses</div>
+    </div>
   </div>
 </section>
 
-<div id="stats-bar" class="stats-bar" style="display:none;">
-  <div class="stat-item"><span class="stat-num" id="stat-convos">1M+</span><div class="stat-label">Conversations</div></div>
-  <div class="stat-item"><span class="stat-num">99%</span><div class="stat-label">Uptime</div></div>
-  <div class="stat-item"><span class="stat-num">6+</span><div class="stat-label">Languages</div></div>
-  <div class="stat-item"><span class="stat-num">500+</span><div class="stat-label">Businesses</div></div>
-</div>
-
+<!-- FEATURES -->
 <section id="features">
-  <h2 class="sec-title">Why <span class="grad">Samvad AI?</span></h2>
-  <p class="sec-sub">Built ground-up for Indian businesses. Every feature designed for Bharat.</p>
-  <div class="feature-grid">
-    <div class="feat-card"><div class="feat-icon-3d fi-p">🌐</div><h3>6+ Indian Languages</h3><p>Auto-detect and respond in Tamil, Hindi, Kannada, Telugu, Malayalam and more. Even Tanglish/Hinglish!</p><span class="feat-tag">NLP Engine v3</span></div>
-    <div class="feat-card"><div class="feat-icon-3d fi-c">🎙️</div><h3>Speech-to-Speech</h3><p>Speak in your language. AI listens and speaks back in the same language. Jarvis-style experience.</p><span class="feat-tag">Real-time Voice</span></div>
-    <div class="feat-card"><div class="feat-icon-3d fi-m">🤖</div><h3>Smart AI Agents</h3><p>Sales, Support, Customer Care — three specialized AI modes that adapt their persona automatically.</p><span class="feat-tag">3 Agent Modes</span></div>
-    <div class="feat-card"><div class="feat-icon-3d fi-g">⚡</div><h3>Real-time Analytics</h3><p>Track conversations, leads, and resolution rates on a beautiful dashboard. Insights delivered live.</p><span class="feat-tag">Live Dashboard</span></div>
+  <div class="sec-header">
+    <div class="sec-eyebrow">Why Samvad AI</div>
+    <h2 class="sec-title">Built ground-up<br>for <span>Indian businesses</span></h2>
+    <p class="sec-sub">Every feature designed for Bharat — multilingual by default, intelligent by design.</p>
+  </div>
+  <div class="feat-grid">
+    <div class="feat-card">
+      <div class="feat-icon">🌐</div>
+      <h3>6+ Indian Languages</h3>
+      <p>Auto-detect and respond in Tamil, Hindi, Kannada, Telugu, Malayalam and more. Even Tanglish and Hinglish work seamlessly.</p>
+      <span class="feat-tag">NLP Engine v3</span>
+    </div>
+    <div class="feat-card">
+      <div class="feat-icon">🎙️</div>
+      <h3>Speech-to-Speech</h3>
+      <p>Speak in your language. The AI listens, understands, and speaks back — a true voice-to-voice Jarvis-style experience.</p>
+      <span class="feat-tag">Real-time Voice</span>
+    </div>
+    <div class="feat-card">
+      <div class="feat-icon">🤖</div>
+      <h3>Smart AI Agents</h3>
+      <p>Sales, Support, and Customer Care — three specialized AI modes that adapt their persona and tone automatically per interaction.</p>
+      <span class="feat-tag">3 Agent Modes</span>
+    </div>
+    <div class="feat-card">
+      <div class="feat-icon">📊</div>
+      <h3>Live Analytics</h3>
+      <p>Track conversations, leads, and resolution rates on a beautiful dashboard. Language distribution, response times — all live.</p>
+      <span class="feat-tag">Live Dashboard</span>
+    </div>
   </div>
 </section>
 
+<!-- DASHBOARD -->
 <section id="dashboard">
   <div class="dash-layout">
     <div class="dash-sidebar">
@@ -542,24 +1329,53 @@ h1.hero-title { font-family:'Space Grotesk',sans-serif; font-size:clamp(50px,6vw
     </div>
     <div class="dash-main">
       <div class="dash-header">
-        <div class="dash-welcome"><h2>Welcome back! 👋</h2><p id="dash-date">Loading...</p></div>
-        <div class="dash-actions"><div class="notif-btn">🔔<span class="notif-badge">3</span></div><div class="avatar">R</div></div>
+        <div class="dash-welcome">
+          <h2>Welcome back! 👋</h2>
+          <p id="dash-date">Loading...</p>
+        </div>
+        <div class="dash-actions">
+          <button class="notif-btn">🔔<span class="notif-badge">3</span></button>
+          <div class="avatar">M</div>
+        </div>
       </div>
       <div class="stat-cards">
-        <div class="stat-card sc1"><div class="sc-top"><span class="sc-label">Total Chats</span><span class="sc-ico">💬</span></div><div class="sc-val" id="dash-total">0</div><div class="sc-change">↑ Live</div></div>
-        <div class="stat-card sc2"><div class="sc-top"><span class="sc-label">AI Resolution</span><span class="sc-ico">✅</span></div><div class="sc-val" id="dash-resolution">89%</div><div class="sc-change">↑ 3% this week</div></div>
-        <div class="stat-card sc3"><div class="sc-top"><span class="sc-label">Leads Captured</span><span class="sc-ico">👤</span></div><div class="sc-val" id="dash-leads">342</div><div class="sc-change">↑ 8% this week</div></div>
-        <div class="stat-card sc4"><div class="sc-top"><span class="sc-label">Avg Response</span><span class="sc-ico">⚡</span></div><div class="sc-val" id="dash-response">3.2s</div><div class="sc-change">↓ 0.4s faster</div></div>
+        <div class="stat-card">
+          <div class="sc-top"><span class="sc-label">Total Chats</span><span class="sc-ico">💬</span></div>
+          <div class="sc-val" id="dash-total">0</div>
+          <div class="sc-change">↑ Live</div>
+        </div>
+        <div class="stat-card">
+          <div class="sc-top"><span class="sc-label">AI Resolution</span><span class="sc-ico">✅</span></div>
+          <div class="sc-val">89%</div>
+          <div class="sc-change">↑ 3% this week</div>
+        </div>
+        <div class="stat-card">
+          <div class="sc-top"><span class="sc-label">Leads Captured</span><span class="sc-ico">👤</span></div>
+          <div class="sc-val">342</div>
+          <div class="sc-change">↑ 8% this week</div>
+        </div>
+        <div class="stat-card">
+          <div class="sc-top"><span class="sc-label">Avg Response</span><span class="sc-ico">⚡</span></div>
+          <div class="sc-val">3.2s</div>
+          <div class="sc-change">↓ 0.4s faster</div>
+        </div>
       </div>
       <div class="dash-grid-2">
-        <div class="dash-panel" id="lang-panel"><div class="panel-title">Language Distribution</div></div>
-        <div class="dash-panel" id="recent-panel"><div class="panel-title">Recent Conversations</div></div>
+        <div class="dash-panel" id="lang-panel">
+          <div class="panel-title">Language Distribution</div>
+          <p style="color:var(--text3);font-size:13px">No conversations yet — start chatting!</p>
+        </div>
+        <div class="dash-panel" id="recent-panel">
+          <div class="panel-title">Recent Conversations</div>
+          <p style="color:var(--text3);font-size:13px">No conversations yet — start chatting!</p>
+        </div>
       </div>
     </div>
   </div>
   <button class="fab" onclick="showSection('chat')" title="New Chat">💬</button>
 </section>
 
+<!-- CHAT -->
 <section id="chat">
   <div class="chat-layout">
     <div class="chat-topbar">
@@ -568,500 +1384,368 @@ h1.hero-title { font-family:'Space Grotesk',sans-serif; font-size:clamp(50px,6vw
         <button class="mode-btn" onclick="setMode(this,'sales')">💼 Sales</button>
         <button class="mode-btn" onclick="setMode(this,'customer')">🤝 Customer Care</button>
       </div>
-      <div class="lang-indicator"><div class="lang-orb"></div><span id="lang-display">Ready...</span></div>
+      <div class="lang-indicator">
+        <div class="lang-orb"></div>
+        <span id="lang-display">Ready...</span>
+      </div>
     </div>
+
     <div class="chat-messages" id="chat-messages">
       <div class="msg ai">
-        <div class="msg-avatar">🤖</div>
+        <div class="msg-av">🤖</div>
         <div>
           <div class="msg-bubble">Vanakkam! 🙏 Naan Samvad AI — FlowZint-oda intelligent assistant. Tamil, Hindi, English, Tanglish, Hinglish — ellam pesuvom! Unga business-ku epdi help pannalaam?</div>
           <div class="msg-lang">🇮🇳 Tamil · Hindi · English · Tanglish · Hinglish · +2 more</div>
         </div>
       </div>
     </div>
+
     <div class="chat-input-area">
-      <button class="mic-btn" id="micBtn" title="Click to start Voice Conversation (supports interruption)">🎙️</button>
+      <button class="mic-btn" id="micBtn" title="Voice Conversation">🎙️</button>
       <input class="chat-input-box" id="chat-input" type="text" placeholder="Type in Tamil / Hindi / Tanglish / Hinglish..." maxlength="300">
-      <button class="send-btn" onclick="sendChatMsg(false)" title="Send (Text Only)">➤</button>
+      <button class="send-btn" onclick="sendChatMsg(false)" title="Send">➤</button>
     </div>
   </div>
 </section>
 
+<!-- ABOUT / FOOTER -->
 <section id="footer-sec">
-  <div class="footer-glow-line"></div>
+  <div class="footer-glow"></div>
   <div class="footer-body">
     <div class="footer-top">
-      <div class="footer-brand"><div class="footer-logo">⚡ Samvad AI</div><p>AI-Powered Business Communication for India. Multi-language, real-time, intelligent conversations at scale.</p><div class="footer-socials"><a class="social-btn">𝕏</a><a class="social-btn">in</a><a class="social-btn">▶</a><a class="social-btn">💬</a></div></div>
-      <div class="footer-col"><h4>Product</h4><a href="#">Features</a><a href="#">Pricing</a><a href="#">API Docs</a><a href="#">Changelog</a></div>
-      <div class="footer-col"><h4>Company</h4><a href="#">About Us</a><a href="#">Blog</a><a href="#">Careers</a><a href="#">Contact</a></div>
-      <div class="footer-col"><h4>Legal</h4><a href="#">Privacy Policy</a><a href="#">Terms of Service</a><a href="#">Security</a><a href="#">Cookie Policy</a></div>
+      <div class="footer-brand">
+        <span class="footer-logo">⚡ Samvad AI</span>
+        <p>AI-Powered Business Communication for India. Multi-language, real-time, intelligent conversations at scale — built for Bharat.</p>
+        <div class="footer-socials">
+          <a class="social-btn">𝕏</a>
+          <a class="social-btn">in</a>
+          <a class="social-btn">▶</a>
+          <a class="social-btn">💬</a>
+        </div>
+      </div>
+      <div class="footer-col">
+        <h4>Product</h4>
+        <a href="#">Features</a>
+        <a href="#">Pricing</a>
+        <a href="#">API Docs</a>
+        <a href="#">Changelog</a>
+      </div>
+      <div class="footer-col">
+        <h4>Company</h4>
+        <a href="#">About Us</a>
+        <a href="#">Blog</a>
+        <a href="#">Careers</a>
+        <a href="#">Contact</a>
+      </div>
+      <div class="footer-col">
+        <h4>Legal</h4>
+        <a href="#">Privacy Policy</a>
+        <a href="#">Terms of Service</a>
+        <a href="#">Security</a>
+        <a href="#">Cookie Policy</a>
+      </div>
     </div>
-    <div class="footer-bottom"><div class="footer-copy">© 2026 Samvad AI. Built for FlowZint AI Hackathon 2026. Made with ❤️ in India 🇮🇳</div><div class="powered-badge">⚡ In partnership with <strong>FlowZint</strong></div></div>
+    <div class="footer-bottom">
+      <div class="footer-copy">© 2026 Samvad AI. Built for FlowZint AI Hackathon 2026. Made with ❤️ in India 🇮🇳</div>
+      <div class="powered-badge">⚡ In partnership with <strong>FlowZint</strong></div>
+    </div>
   </div>
 </section>
-</div>
+
+</div><!-- .page -->
 
 <script>
-// ================== THREE.JS BACKGROUND ==================
-const bgCanvas = document.getElementById('bg-canvas');
-const renderer = new THREE.WebGLRenderer({canvas:bgCanvas,alpha:true,antialias:true});
-renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
-renderer.setSize(window.innerWidth,window.innerHeight);
-const bgScene = new THREE.Scene();
-const bgCamera = new THREE.PerspectiveCamera(60,window.innerWidth/window.innerHeight,0.1,1000);
-bgCamera.position.z = 20;
-const particleGeo = new THREE.BufferGeometry();
-const pCount = 800;
-const pPos = new Float32Array(pCount*3), pCol = new Float32Array(pCount*3);
-for(let i=0;i<pCount;i++){ pPos[i*3]=(Math.random()-0.5)*80; pPos[i*3+1]=(Math.random()-0.5)*80; pPos[i*3+2]=(Math.random()-0.5)*40; const t=Math.random(); pCol[i*3]=t<0.5?0.42:0; pCol[i*3+1]=t<0.5?0.23:0.83; pCol[i*3+2]=t<0.5?0.96:1; }
-particleGeo.setAttribute('position',new THREE.BufferAttribute(pPos,3));
-particleGeo.setAttribute('color',new THREE.BufferAttribute(pCol,3));
-const particles = new THREE.Points(particleGeo,new THREE.PointsMaterial({size:0.12,vertexColors:true,transparent:true,opacity:0.7}));
-bgScene.add(particles);
-const mkWS=(r,x,y,z,c)=>{const m=new THREE.Mesh(new THREE.SphereGeometry(r,12,12),new THREE.MeshBasicMaterial({color:c,wireframe:true,transparent:true,opacity:0.07}));m.position.set(x,y,z);bgScene.add(m);return m;};
-const ws1=mkWS(8,-12,5,-10,0x6C3BF5),ws2=mkWS(5,14,-6,-8,0x00D4FF),ws3=mkWS(3,4,-10,-5,0xa78bfa);
-let bgT=0;
-(function animBg(){requestAnimationFrame(animBg);bgT+=0.003;particles.rotation.y=bgT*0.04;particles.rotation.x=bgT*0.01;ws1.rotation.x=bgT*0.2;ws1.rotation.y=bgT*0.3;ws2.rotation.x=bgT*0.15;ws2.rotation.y=-bgT*0.25;ws3.rotation.z=bgT*0.35;ws1.position.y=5+Math.sin(bgT*0.7)*2;ws2.position.y=-6+Math.cos(bgT*0.5)*2;renderer.render(bgScene,bgCamera);})();
+// ===== LANGUAGE DETECTION =====
+const TAMIL_KEYWORDS = new Set(['naan','nee','avan','aval','ivanga','avanga','unga','en','enakku','yennakku','ennaku','enna','yaaru','eppadi','ippo','appo','apram','pannu','pannunga','sollu','sollunga','pesu','pesanum','poga','vaa','vaanga','irukku','irukka','iruken','theriyum','theriyathu','mudiyum','venda','vendam','vendum','venum','nalla','romba','konjam','seri','sari','aama','therla','puriyala','puriyuthu','enga','inge','ange','vanakkam','machan','da','di','bro','akka','anna']);
+const HINDI_KEYWORDS = new Set(['aap','tum','mai','hum','usne','mujhe','kya','kaise','kab','kahan','kyu','kaun','hai','hain','hoon','the','thi','raha','rahi','kar','karo','karna','karta','karte','jao','jaana','aao','batana','batao','bataiye','sunna','suno','dekho','acha','theek','sahi','nahi','haan','ji','bhai','behan','mera','tera','uska','chahiye','abhi','kal','aaj','yaar','bahut','bilkul','zaroor','namaste','kaam','paisa']);
+const ENGLISH_COMMON = new Set(['hello','hi','hey','yes','no','ok','okay','thanks','thank','please','help','sorry','good','bad','fine','great','awesome','cool','nice','love','like','want','need','get','have','do','go','come','see','look','tell','say','ask','know','think','feel','work','time','day','week','today','tomorrow','now','later','always','never','maybe','really','very','too','also','just','only','still','ever','once']);
 
-// ================== HERO SPHERE ==================
-const hC=document.getElementById('hero-canvas');
-const hR=new THREE.WebGLRenderer({canvas:hC,alpha:true,antialias:true});
-hR.setPixelRatio(Math.min(window.devicePixelRatio,2)); hR.setSize(420,420);
-const hSc=new THREE.Scene(), hCam=new THREE.PerspectiveCamera(50,1,0.1,100);
-hCam.position.z=4;
-const hSph=new THREE.Mesh(new THREE.SphereGeometry(1.5,64,64),new THREE.MeshPhongMaterial({color:0x0a0820,emissive:0x1a0a40,specular:0x6C3BF5,shininess:120,transparent:true,opacity:0.85}));
-hSc.add(hSph);
-const hWr=new THREE.Mesh(new THREE.SphereGeometry(1.52,24,24),new THREE.MeshBasicMaterial({color:0x6C3BF5,wireframe:true,transparent:true,opacity:0.18}));
-hSc.add(hWr);
-const hGl=new THREE.Mesh(new THREE.SphereGeometry(1.2,32,32),new THREE.MeshBasicMaterial({color:0x2a1060,transparent:true,opacity:0.6}));
-hSc.add(hGl);
-const hRg=new THREE.Mesh(new THREE.TorusGeometry(1.9,0.025,8,100),new THREE.MeshBasicMaterial({color:0x00D4FF,transparent:true,opacity:0.5}));
-hRg.rotation.x=Math.PI/3; hSc.add(hRg);
-const hRg2=new THREE.Mesh(new THREE.TorusGeometry(2.1,0.015,8,100),new THREE.MeshBasicMaterial({color:0x6C3BF5,transparent:true,opacity:0.3}));
-hRg2.rotation.x=Math.PI/2.2; hRg2.rotation.z=Math.PI/4; hSc.add(hRg2);
-hSc.add(new THREE.AmbientLight(0x1a0a30,2));
-const pLt=new THREE.PointLight(0x6C3BF5,3,8); pLt.position.set(2,2,3); hSc.add(pLt);
-const pLt2=new THREE.PointLight(0x00D4FF,2,8); pLt2.position.set(-2,-1,2); hSc.add(pLt2);
-let hT=0,mX=0,mY=0;
-document.addEventListener('mousemove',e=>{mX=(e.clientX/window.innerWidth-0.5)*0.5;mY=(e.clientY/window.innerHeight-0.5)*0.5;});
-(function animH(){requestAnimationFrame(animH);hT+=0.008;hSph.rotation.y=hT*0.4+mX;hSph.rotation.x=mY*0.3;hWr.rotation.y=hT*0.6;hWr.rotation.x=hT*0.2;hRg.rotation.z=hT*0.5;hRg2.rotation.y=-hT*0.3;pLt.position.x=Math.sin(hT)*2.5;pLt.position.y=Math.cos(hT*0.7)*2;pLt2.position.x=Math.cos(hT*0.8)*-2.5;hR.render(hSc,hCam);})();
-
-// ================== APP LOGIC ==================
-let chatMode = 'support';
-let isTyping = false;
-window.convId = null;
-let jarvisRecognition = null;
-let jarvisActive = false;
-let isProcessing = false; 
-let currentTranscript = '';
-let audioElement = null;  // to track TTS audio
-
-function showSection(id) {
-  document.querySelectorAll('section').forEach(s=>s.style.display='none');
-  document.querySelectorAll('.nav-links a').forEach(a=>a.classList.remove('active'));
-  const sb = document.getElementById('stats-bar');
-  const t = document.getElementById(id);
-  if(t){
-    if(id==='landing'){t.style.display='flex';sb.style.display='flex';}
-    else{t.style.display='block';sb.style.display='none';}
-    t.classList.add('section-transition');
-    setTimeout(()=>t.classList.remove('section-transition'),500);
+function detectLang(text) {
+  if (!text.trim()) return 'English';
+  if (/[\u0B80-\u0BFF]/.test(text)) return 'Tamil';
+  if (/[\u0900-\u097F]/.test(text)) return 'Hindi';
+  const lower = text.toLowerCase().replace(/[^a-z0-9 ]/g,' ');
+  const words = lower.split(/\s+/);
+  let tm=0,hi=0,en=0;
+  for (const w of words) {
+    if (TAMIL_KEYWORDS.has(w)) tm++;
+    if (HINDI_KEYWORDS.has(w)) hi++;
+    if (ENGLISH_COMMON.has(w)) en++;
   }
-  const nav = document.getElementById('nav-'+id);
-  if(nav) nav.classList.add('active');
-  window.scrollTo(0,0);
-  if(id==='dashboard'){loadDashboardStats();loadRecentConversations();}
+  if (tm > hi && tm >= 2) return 'Tamil';
+  if (hi > tm && hi >= 2) return 'Hindi';
+  if (en >= 2) return 'English';
+  if (tm >= 1) return 'Tamil';
+  if (hi >= 1) return 'Hindi';
+  return 'English';
 }
-showSection('landing');
+function getLangCode(ld) {
+  if (ld==='Tamil') return 'ta';
+  if (ld==='Hindi') return 'hi';
+  return 'en';
+}
 
-const now = new Date();
-document.getElementById('dash-date').textContent = now.toLocaleDateString('en-IN',{weekday:'long',year:'numeric',month:'long',day:'numeric'}) + ' · All systems operational';
+// ===== SECTION NAVIGATION =====
+function showSection(id) {
+  document.querySelectorAll('section').forEach(s => {
+    s.style.display = 'none';
+    s.classList.remove('active');
+  });
+  document.querySelectorAll('.nav-link').forEach(a => a.classList.remove('active'));
+  const t = document.getElementById(id);
+  if (t) {
+    t.classList.add('active');
+    if (id === 'landing') t.style.display = 'flex';
+    else t.style.display = 'block';
+  }
+  const nav = document.getElementById('nav-' + id);
+  if (nav) nav.classList.add('active');
+  window.scrollTo(0,0);
+  if (id === 'dashboard') { loadDashboardStats(); loadRecentConversations(); }
+}
 
+// Set date
+document.getElementById('dash-date').textContent = new Date().toLocaleDateString('en-IN',{weekday:'long',year:'numeric',month:'long',day:'numeric'}) + ' · All systems operational';
+
+// ===== MODE =====
+let chatMode = 'support';
 function setMode(btn, mode) {
-  document.querySelectorAll('.mode-btn').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
   chatMode = mode;
 }
 
-// ================== CORRECTED FRONTEND LANGUAGE DETECTION ==================
-function detectLangDisplay(txt) {
-  if (/[\u0B80-\u0BFF]/.test(txt)) return 'தமிழ்';
-  if (/[\u0900-\u097F]/.test(txt)) return 'हिन्दी';
-  
-  const lower = txt.toLowerCase();
-  const tanglish = ['unga','en','naan','nee','avan','aval','ivanga','ippo','appo','eppadi','sollu','pannu','irukku','vanthu','nalla','romba','konjam','mudiyum','theriyum','padi','velai','veedu','pesu','pesanum','enakku','yennakku','illai','therla','yenakku','yenna','yeppadi','seri','sari','aama','machan','da','bro','anna','akka'];
-  const hinglish = ['aap','tum','mai','hum','kya','kaise','kab','kyu','kaun','hai','hoon','raha','kar','karo','karna','jao','aao','batana','suno','dekho','acha','theek','sahi','nahi','haan','ji','yaar','bhai','bahut','bilkul'];
-  const englishWords = ['hello','hi','hey','yes','no','ok','okay','thanks','please','help','sorry','good','bad','fine','great','awesome','love','like','want','need','get','have','do','go','come','see','look','tell','say','ask','answer','know','think','feel','work','time','day','week','month','year','today','tomorrow','yesterday','now','later','soon','always','never','maybe','probably','actually','really','very','too','also','just','only','even','still','already','yet','ever','once','twice','three'];
-  
-  let tamilCount = 0, hindiCount = 0, englishCount = 0;
-  for (const w of tanglish) {
-    if (lower.includes(w)) tamilCount++;
-    if (tamilCount >= 2) return 'தமிழ்';
-  }
-  for (const w of hinglish) {
-    if (lower.includes(w)) hindiCount++;
-    if (hindiCount >= 2) return 'हिन्दी';
-  }
-  for (const w of englishWords) {
-    if (lower.includes(w)) englishCount++;
-    if (englishCount >= 2) return 'English';
-  }
-  
-  // If still undecided, compare counts
-  if (tamilCount > hindiCount && tamilCount >= 1) return 'தமிழ்';
-  if (hindiCount > tamilCount && hindiCount >= 1) return 'हिन्दी';
-  
-  return 'English';
-}
-
-function getLangCode(ld) {
-  if(ld==='தமிழ்') return 'ta';
-  if(ld==='हिन्दी') return 'hi';
-  return 'en';
-}
-
-// ================== TTS FUNCTIONS ===========================
+// ===== TTS =====
+let audioEl = null;
 function cancelTTS() {
-  if (audioElement) {
-    audioElement.pause();
-    audioElement.currentTime = 0;
-    audioElement = null;
-  }
-  window.speechSynthesis && window.speechSynthesis.cancel();
+  if (audioEl) { audioEl.pause(); audioEl.currentTime = 0; audioEl = null; }
+  if (window.speechSynthesis) window.speechSynthesis.cancel();
 }
 
-function speakText(text, langDisplay, callback) {
-    if (!text) { if(callback) callback(); return; }
-    console.log('🔊 TTS:', text.substring(0, 30), 'Lang:', langDisplay);
-    const langCode = getLangCode(langDisplay);
-    let ttsFailed = false;
-
-    try {
-        fetch('/api/tts', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ text, lang: langCode })
-        })
-        .then(res => res.json())
-        .then(data => {
-            if (data.audio) {
-                cancelTTS(); // ensure no previous audio
-                audioElement = new Audio('data:audio/mp3;base64,' + data.audio);
-                audioElement.onended = () => {
-                    audioElement = null;
-                    if (callback) callback();
-                };
-                audioElement.onerror = () => {
-                    audioElement = null;
-                    fallbackToBrowserSpeech(text, langDisplay, callback);
-                };
-                audioElement.play().catch(() => {
-                    audioElement = null;
-                    fallbackToBrowserSpeech(text, langDisplay, callback);
-                });
-            } else {
-                ttsFailed = true;
-                fallbackToBrowserSpeech(text, langDisplay, callback);
-            }
-        })
-        .catch(() => {
-            ttsFailed = true;
-            fallbackToBrowserSpeech(text, langDisplay, callback);
-        });
-    } catch (e) {
-        console.log('TTS API Error:', e);
-        fallbackToBrowserSpeech(text, langDisplay, callback);
-    }
+function speakText(text, lang, cb) {
+  if (!text) { if(cb) cb(); return; }
+  const lc = getLangCode(lang);
+  fetch('/api/tts', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({text, lang: lc}) })
+    .then(r => r.json())
+    .then(d => {
+      if (d.audio) {
+        cancelTTS();
+        audioEl = new Audio('data:audio/mp3;base64,' + d.audio);
+        audioEl.onended = () => { audioEl=null; if(cb) cb(); };
+        audioEl.onerror = () => { audioEl=null; fallbackTTS(text, lang, cb); };
+        audioEl.play().catch(() => { audioEl=null; fallbackTTS(text, lang, cb); });
+      } else fallbackTTS(text, lang, cb);
+    }).catch(() => fallbackTTS(text, lang, cb));
 }
 
-function fallbackToBrowserSpeech(text, langDisplay, callback) {
-    if (!window.speechSynthesis) { if(callback) callback(); return; }
-    window.speechSynthesis.cancel();
-    let voices = window.speechSynthesis.getVoices();
-    if (voices.length === 0) {
-        window.speechSynthesis.onvoiceschanged = () => { 
-            voices = window.speechSynthesis.getVoices(); 
-            speakWithVoice(text, langDisplay, voices, callback);
-        };
-    } else { speakWithVoice(text, langDisplay, voices, callback); }
+function fallbackTTS(text, lang, cb) {
+  if (!window.speechSynthesis) { if(cb) cb(); return; }
+  const u = new SpeechSynthesisUtterance(text);
+  const map = {Tamil:'ta-IN',Hindi:'hi-IN',English:'en-US'};
+  u.lang = map[lang] || 'en-US';
+  u.rate = 0.9;
+  u.onend = u.onerror = () => { if(cb) cb(); };
+  window.speechSynthesis.speak(u);
 }
 
-function speakWithVoice(text, langDisplay, voices, callback) {
-    const lmap = { 'ta': 'ta-IN', 'hi': 'hi-IN', 'en': 'en-US' };
-    const targetLang = lmap[getLangCode(langDisplay)] || 'en-US';
-    let nativeVoice = null;
-    for (const v of voices) { if (v.lang.startsWith(targetLang.split('-')[0])) { nativeVoice = v; break; } }
-    if (!nativeVoice && targetLang !== 'en-US') { for (const v of voices) { if (v.lang.startsWith('en')) { nativeVoice = v; break; } } }
+// ===== JARVIS VOICE =====
+let jarvisActive = false, isProcessing = false;
+let jarvisRecognition = null;
 
-    const utterance = new SpeechSynthesisUtterance(text);
-    if (nativeVoice) { utterance.voice = nativeVoice; utterance.lang = nativeVoice.lang; } 
-    else { utterance.lang = 'en-US'; }
-    utterance.rate = 0.9;
-    utterance.pitch = 1;
-    utterance.onend = () => { if(callback) callback(); };
-    utterance.onerror = () => { if(callback) callback(); };
-    console.log('🔊 Speaking via browser:', utterance.lang);
-    window.speechSynthesis.speak(utterance);
-}
-
-// ================== JARVIS HELPERS ==================
 function showJarvis(status, sub, listening) {
   document.getElementById('jarvis-overlay').classList.add('active');
   document.getElementById('jarvis-status').textContent = status;
   document.getElementById('jarvis-sub').textContent = sub || 'Tamil · Hindi · English supported';
   document.getElementById('jarvis-core-icon').textContent = listening ? '🎙️' : '🤖';
-  document.querySelectorAll('.jarvis-bar').forEach(b => b.classList.toggle('idle', !listening));
+  document.querySelectorAll('.jbar').forEach(b => b.classList.toggle('idle', !listening));
 }
-
 function hideJarvis() {
   document.getElementById('jarvis-overlay').classList.remove('active');
   document.getElementById('micBtn').classList.remove('jarvis-active');
   jarvisActive = false;
-  if(jarvisRecognition) { try{ jarvisRecognition.stop(); } catch(e){} }
+  if (jarvisRecognition) try { jarvisRecognition.stop(); } catch(e) {}
   cancelTTS();
 }
-
 function cancelJarvis() {
   isProcessing = false;
-  currentTranscript = '';
-  if(jarvisRecognition) { try{ jarvisRecognition.stop(); } catch(e){} }
+  if (jarvisRecognition) try { jarvisRecognition.stop(); } catch(e) {}
   cancelTTS();
   hideJarvis();
 }
 
-// ================== CONTINUOUS CONVERSATION WITH INTERRUPT ==================
-
 function startListening() {
-    if (!jarvisActive) return;
-    if (isProcessing) { console.log('Waiting for processing...'); return; }
-    if (jarvisRecognition) {
-        try { jarvisRecognition.stop(); } catch(e) {}
-        jarvisRecognition = null;
+  if (!jarvisActive || isProcessing) return;
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) { alert('Speech recognition not supported in this browser.'); return; }
+  if (jarvisRecognition) try { jarvisRecognition.stop(); } catch(e) {}
+
+  const recognition = new SR();
+  jarvisRecognition = recognition;
+  const langs = ['ta-IN','hi-IN','en-US'];
+  let li = 0;
+  recognition.lang = langs[li];
+  recognition.continuous = true;
+  recognition.interimResults = true;
+  recognition.maxAlternatives = 1;
+  let finalText = '', interimText = '', silenceTimer = null;
+
+  recognition.onstart = () => {
+    showJarvis('Listening...', {0:'Tamil',1:'Hindi',2:'English'}[li] + ' mode', true);
+    finalText = ''; interimText = '';
+    document.getElementById('jarvis-send-btn').style.display = 'inline-block';
+    document.getElementById('jarvis-send-btn').onclick = () => {
+      if (silenceTimer) clearTimeout(silenceTimer);
+      const t = finalText + interimText;
+      if (t.trim()) processVoiceInput(t);
+    };
+  };
+
+  recognition.onresult = (event) => {
+    if (audioEl || (window.speechSynthesis && window.speechSynthesis.speaking)) cancelTTS();
+    if (silenceTimer) clearTimeout(silenceTimer);
+    let interim = '';
+    for (let i = event.resultIndex; i < event.results.length; i++) {
+      if (event.results[i].isFinal) finalText += event.results[i][0].transcript;
+      else interim += event.results[i][0].transcript;
     }
-    
-    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SR) { alert('Speech recognition not supported.'); return; }
-    
-    const recognition = new SR();
-    jarvisRecognition = recognition;
-    
-    let langIndex = 0;
-    const langs = ['ta-IN', 'hi-IN', 'en-US'];
-    recognition.lang = langs[langIndex];
-    recognition.continuous = true;
-    recognition.interimResults = true;
-    recognition.maxAlternatives = 1;
+    interimText = interim;
+    const display = finalText + interim;
+    if (display) {
+      document.getElementById('jarvis-status').textContent = display.length > 44 ? display.substring(0,44)+'...' : display;
+      document.getElementById('jarvis-sub').textContent = 'Detected: ' + detectLang(display);
+    }
+    silenceTimer = setTimeout(() => {
+      if ((finalText + interimText).trim()) processVoiceInput(finalText + interimText);
+    }, 2800);
+  };
 
-    let finalText = '';
-    let interimText = '';
-    let silenceTimer = null;
+  recognition.onerror = (e) => {
+    if (e.error === 'not-allowed') { alert('Please allow microphone access.'); cancelJarvis(); return; }
+    if (li < langs.length - 1) { li++; recognition.lang = langs[li]; }
+    if (jarvisActive && !isProcessing) setTimeout(() => startListening(), 400);
+  };
 
-    recognition.onstart = () => {
-        console.log('🎧 Listening with language:', recognition.lang);
-        const langName = { 'ta-IN':'Tamil', 'hi-IN':'Hindi', 'en-US':'English' }[recognition.lang] || 'Unknown';
-        showJarvis('Listening...', 'Language: ' + langName, true);
-        finalText = '';
-        interimText = '';
-        document.getElementById('jarvis-send-btn').style.display = 'inline-block';
-        document.getElementById('jarvis-send-btn').onclick = function() {
-            if (silenceTimer) clearTimeout(silenceTimer);
-            if (finalText.trim() || interimText.trim()) {
-                processVoiceInput(finalText + interimText);
-            }
-        };
-    };
+  recognition.onend = () => {
+    if (jarvisActive && !isProcessing) {
+      const t = finalText + interimText;
+      if (t.trim()) processVoiceInput(t);
+      else setTimeout(() => startListening(), 350);
+    }
+  };
 
-    recognition.onresult = (event) => {
-        // If user speaks while TTS is playing, interrupt!
-        if (audioElement || (window.speechSynthesis && window.speechSynthesis.speaking)) {
-            console.log('🛑 Interrupt detected! Stopping TTS...');
-            cancelTTS();
-            // Don't stop recognition, just cancel TTS and process this new input
-            // We'll let the recognition continue to collect speech.
-        }
-
-        if (silenceTimer) clearTimeout(silenceTimer);
-        let interim = '';
-        for (let i = event.resultIndex; i < event.results.length; i++) {
-            if (event.results[i].isFinal) { finalText += event.results[i][0].transcript; } 
-            else { interim += event.results[i][0].transcript; }
-        }
-        interimText = interim;
-        const display = finalText + interim;
-        if (display) {
-            const lang = detectLangDisplay(display);
-            document.getElementById('jarvis-status').textContent = display.length > 40 ? display.substring(0,40)+'...' : display;
-            document.getElementById('jarvis-sub').textContent = 'Language: ' + lang + ' (click Send or wait)';
-        }
-        silenceTimer = setTimeout(() => {
-            if (finalText.trim() || interimText.trim()) {
-                processVoiceInput(finalText + interimText);
-            }
-        }, 3000);
-    };
-
-    recognition.onerror = (event) => {
-        console.warn('Mic Error:', event.error);
-        if (event.error === 'language-not-supported' || event.error === 'no-speech') {
-            if (langIndex < langs.length - 1) {
-                langIndex++;
-                recognition.lang = langs[langIndex];
-                recognition.start();
-                return;
-            }
-        }
-        if (event.error === 'not-allowed') {
-            alert('Please allow microphone access.');
-            cancelJarvis();
-        } else {
-            if (event.error === 'aborted' || event.error === 'network') {
-                if (jarvisActive && !isProcessing) {
-                    if (langIndex < langs.length - 1) {
-                        langIndex++;
-                        recognition.lang = langs[langIndex];
-                    }
-                    setTimeout(() => {
-                        if (jarvisActive && !isProcessing) startListening();
-                    }, 500);
-                }
-            }
-        }
-    };
-
-    recognition.onend = () => {
-        console.log('🔇 Recognition ended.');
-        if (jarvisActive && !isProcessing) {
-            if (finalText.trim() || interimText.trim()) {
-                processVoiceInput(finalText + interimText);
-            } else {
-                if (langIndex < langs.length - 1) {
-                    langIndex++;
-                    recognition.lang = langs[langIndex];
-                }
-                setTimeout(() => startListening(), 300);
-            }
-        }
-    };
-
-    recognition.start();
+  recognition.start();
 }
 
 function processVoiceInput(text) {
-    if (!text.trim()) return;
-    if (isProcessing) return;
-    isProcessing = true;
-    
-    // Stop recognition temporarily to avoid duplicate processing
-    if (jarvisRecognition) { try { jarvisRecognition.stop(); } catch(e) {} }
-    
-    showJarvis('Processing...', 'AI is thinking...', false);
-    document.getElementById('jarvis-send-btn').style.display = 'none';
-    
-    document.getElementById('chat-input').value = text.trim();
-    
-    sendChatMsg(true).then(() => {
-        isProcessing = false;
-        if (jarvisActive) {
-            // Give a small delay before restarting listening
-            setTimeout(() => startListening(), 800);
-        }
-    }).catch(() => {
-        isProcessing = false;
-        if (jarvisActive) setTimeout(() => startListening(), 800);
-    });
+  if (!text.trim() || isProcessing) return;
+  isProcessing = true;
+  if (jarvisRecognition) try { jarvisRecognition.stop(); } catch(e) {}
+  showJarvis('Processing...', 'AI is thinking...', false);
+  document.getElementById('jarvis-send-btn').style.display = 'none';
+  document.getElementById('chat-input').value = text.trim();
+  sendChatMsg(true).then(() => {
+    isProcessing = false;
+    if (jarvisActive) setTimeout(() => startListening(), 700);
+  }).catch(() => {
+    isProcessing = false;
+    if (jarvisActive) setTimeout(() => startListening(), 700);
+  });
 }
 
 document.getElementById('micBtn').addEventListener('click', function() {
-  if(jarvisActive){ cancelJarvis(); return; }
-  
-  if(!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)){
-    alert('Voice input requires Chrome browser.');
+  if (jarvisActive) { cancelJarvis(); return; }
+  if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+    alert('Voice input requires Chrome or Safari browser.');
     return;
   }
-
   jarvisActive = true;
   isProcessing = false;
   this.classList.add('jarvis-active');
-  
-  showJarvis('Initializing Samvad AI...', 'Starting up...', false);
-  
-  const greetings = [
-    { lang:'தமிழ்', text:'Vanakkam! Naan Samvad AI. Enna help pannalaam?', code:'ta' },
-    { lang:'हिन्दी', text:'Namaste! Main Samvad AI hoon. Kaise help karoon?', code:'hi' },
-    { lang:'English', text:'Hello! I am Samvad AI. How can I help you today?', code:'en' }
+  showJarvis('Samvad AI initializing...', 'Starting up...', false);
+  const greets = [
+    {lang:'Tamil', text:'Vanakkam! Naan Samvad AI. Enna help pannalaam?', code:'ta'},
+    {lang:'Hindi', text:'Namaste! Main Samvad AI hoon. Kaise help karoon?', code:'hi'},
+    {lang:'English', text:'Hello! I am Samvad AI. How can I help you today?', code:'en'}
   ];
-  const g = greetings[Math.floor(Math.random() * greetings.length)];
-  
-  showJarvis('Hello! Pesungal...', g.lang + ' detected', true);
-  
-  speakText(g.text, g.lang, () => {
-      if (jarvisActive) startListening();
-  });
+  const g = greets[Math.floor(Math.random() * greets.length)];
+  showJarvis('Hello! Pesungal...', g.lang + ' ready', true);
+  speakText(g.text, g.lang, () => { if (jarvisActive) startListening(); });
 });
 
-// ================== SEND CHAT ==================
+// ===== CHAT =====
+let isTyping = false;
+window.convId = null;
+
 async function sendChatMsg(shouldSpeak = false) {
-  if(isTyping) return;
+  if (isTyping) return;
   const inp = document.getElementById('chat-input');
   const txt = inp.value.trim();
-  if(!txt) return;
+  if (!txt) return;
   inp.value = '';
 
-  const ld = detectLangDisplay(txt);
-  document.getElementById('lang-display').textContent = 'Detected: ' + ld;
+  const lang = detectLang(txt);
+  document.getElementById('lang-display').textContent = 'Detected: ' + lang;
 
   const msgs = document.getElementById('chat-messages');
-  msgs.innerHTML += `<div class="msg user"><div class="msg-avatar">👤</div><div><div class="msg-bubble">${txt}</div><div class="msg-lang">${ld}</div></div></div>`;
+  const uDiv = document.createElement('div');
+  uDiv.className = 'msg user';
+  uDiv.innerHTML = `<div class="msg-av">👤</div><div><div class="msg-bubble">${txt}</div><div class="msg-lang">${lang}</div></div>`;
+  msgs.appendChild(uDiv);
 
-  const tid = 'typing-'+Date.now();
-  msgs.innerHTML += `<div class="msg ai" id="${tid}"><div class="msg-avatar">🤖</div><div class="typing-bubble"><div class="t-dot"></div><div class="t-dot"></div><div class="t-dot"></div></div></div>`;
+  const tid = 'typing-' + Date.now();
+  const tDiv = document.createElement('div');
+  tDiv.className = 'msg ai';
+  tDiv.id = tid;
+  tDiv.innerHTML = `<div class="msg-av">🤖</div><div class="typing-bubble"><div class="t-dot"></div><div class="t-dot"></div><div class="t-dot"></div></div>`;
+  msgs.appendChild(tDiv);
   msgs.scrollTop = msgs.scrollHeight;
   isTyping = true;
 
   try {
-    const res = await fetch('/api/chat-stream',{
-      method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({message:txt,mode:chatMode,conversation_id:window.convId||null})
+    const res = await fetch('/api/chat-stream', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({message: txt, mode: chatMode, conversation_id: window.convId || null})
     });
-    if(!res.ok) throw new Error('Server error');
+    if (!res.ok) throw new Error('Server error');
 
     const reader = res.body.getReader();
     const decoder = new TextDecoder();
     let aiReply = '';
 
     document.getElementById(tid)?.remove();
-    const mid = 'ai-msg-'+Date.now();
-    msgs.innerHTML += `<div class="msg ai" id="${mid}"><div class="msg-avatar">🤖</div><div><div class="msg-bubble" id="bubble-${mid}"></div><div class="msg-lang">🤖 Samvad AI · ${chatMode} · ${ld}</div></div></div>`;
-    const bubble = document.getElementById('bubble-'+mid);
+    const mid = 'ai-msg-' + Date.now();
+    const aiDiv = document.createElement('div');
+    aiDiv.className = 'msg ai';
+    aiDiv.id = mid;
+    aiDiv.innerHTML = `<div class="msg-av">🤖</div><div><div class="msg-bubble" id="bubble-${mid}"></div><div class="msg-lang">🤖 Samvad AI · ${chatMode} · ${lang}</div></div>`;
+    msgs.appendChild(aiDiv);
+    const bubble = document.getElementById('bubble-' + mid);
 
-    while(true){
-      const {done,value} = await reader.read();
-      if(done) break;
-      const lines = decoder.decode(value).split('\n');
-      for(const line of lines){
-        if(line.startsWith('data: ')){
+    while(true) {
+      const {done, value} = await reader.read();
+      if (done) break;
+      for (const line of decoder.decode(value).split('\n')) {
+        if (line.startsWith('data: ')) {
           const c = line.substring(6);
-          if(c==='[DONE]') break;
+          if (c === '[DONE]') break;
           aiReply += c;
-          if(bubble) bubble.textContent = aiReply;
+          if (bubble) bubble.textContent = aiReply;
           msgs.scrollTop = msgs.scrollHeight;
         }
       }
     }
-    
+
     if (shouldSpeak === true) {
-        console.log('🔊 Speaking Reply...');
-        await new Promise((resolve) => {
-            speakText(aiReply, ld, resolve);
-        });
+      await new Promise(resolve => speakText(aiReply, lang, resolve));
     }
-    
     return aiReply;
-    
   } catch(err) {
-    console.error('Chat error:',err);
     document.getElementById(tid)?.remove();
-    msgs.innerHTML += `<div class="msg ai"><div class="msg-avatar">🤖</div><div><div class="msg-bubble">⚠️ Server error — please try again! 🔄</div></div></div>`;
+    const errDiv = document.createElement('div');
+    errDiv.className = 'msg ai';
+    errDiv.innerHTML = `<div class="msg-av">🤖</div><div><div class="msg-bubble">⚠️ Server error — is the Flask backend running? Make sure to run the Python server and set GROQ_API_KEY.</div></div>`;
+    msgs.appendChild(errDiv);
     throw err;
   } finally {
     msgs.scrollTop = msgs.scrollHeight;
@@ -1069,33 +1753,32 @@ async function sendChatMsg(shouldSpeak = false) {
   }
 }
 
-document.getElementById('chat-input').addEventListener('keydown', function(e) { 
-    if(e.key === 'Enter') { 
-        e.preventDefault(); 
-        sendChatMsg(false); 
-    } 
+document.getElementById('chat-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') { e.preventDefault(); sendChatMsg(false); }
 });
 
-// ================== DASHBOARD ==================
+// ===== DASHBOARD =====
 async function loadDashboardStats() {
   try {
     const res = await fetch('/api/stats');
     const data = await res.json();
-    document.getElementById('dash-total').textContent = data.total_conversations||0;
-    document.getElementById('stat-convos').textContent = (data.total_conversations||0)+'';
+    const total = data.total_conversations || 0;
+    document.getElementById('dash-total').textContent = total;
+    document.getElementById('stat-convos').textContent = total > 1000 ? Math.round(total/1000)+'K+' : total+'';
+    const langs = data.languages || {};
     const lp = document.getElementById('lang-panel');
-    const langs = data.languages||{};
-    let html = `<div class="panel-title">Language Distribution</div>`;
-    const colors=['lb1','lb2','lb3','lb4','lb5'];
-    let i=0, total=data.total_conversations||1;
-    for(const [name,count] of Object.entries(langs)){
-      const pct=Math.round((count/total)*100);
-      html+=`<div class="lang-row"><div class="lang-info"><span class="lang-name">${name}</span><span class="lang-pct">${pct}%</span></div><div class="lang-bar-bg"><div class="lang-bar ${colors[i%5]}" style="width:${pct}%"></div></div></div>`;
+    const colors = ['lb1','lb2','lb3','lb4','lb5'];
+    let html = '<div class="panel-title">Language Distribution</div>';
+    let i = 0;
+    const t = Object.values(langs).reduce((a,b) => a+b, 0) || 1;
+    for (const [name, count] of Object.entries(langs)) {
+      const pct = Math.round((count/t)*100);
+      html += `<div class="lang-row"><div class="lang-info"><span class="lang-name">${name}</span><span class="lang-pct">${pct}%</span></div><div class="lang-bar-bg"><div class="lang-bar ${colors[i%5]}" style="width:${pct}%"></div></div></div>`;
       i++;
     }
-    if(i===0) html+=`<p style="color:rgba(255,255,255,0.4)">No conversations yet.</p>`;
-    lp.innerHTML=html;
-  } catch(e){console.log('Stats error:',e);}
+    if (!i) html += '<p style="color:var(--text3);font-size:13px">No conversations yet — start chatting!</p>';
+    lp.innerHTML = html;
+  } catch(e) { console.log('Stats error:', e); }
 }
 
 async function loadRecentConversations() {
@@ -1103,26 +1786,21 @@ async function loadRecentConversations() {
     const res = await fetch('/api/history');
     const convos = await res.json();
     const panel = document.getElementById('recent-panel');
-    let html = `<div class="panel-title">Recent Conversations</div>`;
+    let html = '<div class="panel-title">Recent Conversations</div>';
     const recent = convos.slice(-4).reverse();
-    if(!recent.length){html+=`<p style="color:rgba(255,255,255,0.4)">No conversations yet. Start chatting!</p>`;}
-    else{
-      const colors=['ca1','ca2','ca3','ca4'];
-      const badges={'Tamil':'cb-ta','Hindi':'cb-hi','English':'cb-en','Malayalam':'cb-ml'};
-      recent.forEach((c,idx)=>{
-        const color=colors[idx%4], badge=badges[c.language]||'cb-en', init=c.language?c.language[0]:'U';
-        html+=`<div class="conv-item"><div class="conv-avatar ${color}">${init}</div><div class="conv-info"><div class="conv-name">${c.id}</div><div class="conv-preview">${c.count} messages</div></div><span class="conv-badge ${badge}">${c.language}</span></div>`;
+    if (!recent.length) { html += '<p style="color:var(--text3);font-size:13px">No conversations yet — start chatting!</p>'; }
+    else {
+      recent.forEach((c, idx) => {
+        const emojis = ['🌿','🌾','🍃','🌱'];
+        html += `<div class="conv-item"><div class="conv-av">${emojis[idx%4]}</div><div class="conv-info"><div class="conv-name">${c.id}</div><div class="conv-preview">${c.count} messages · ${c.mode}</div></div><span class="conv-badge">${c.language}</span></div>`;
       });
     }
-    panel.innerHTML=html;
-  } catch(e){console.log('History error:',e);}
+    panel.innerHTML = html;
+  } catch(e) { console.log('History error:', e); }
 }
 
-window.addEventListener('resize',()=>{
-  renderer.setSize(window.innerWidth,window.innerHeight);
-  bgCamera.aspect=window.innerWidth/window.innerHeight;
-  bgCamera.updateProjectionMatrix();
-});
+// ===== INIT =====
+showSection('landing');
 </script>
 </body>
 </html>
